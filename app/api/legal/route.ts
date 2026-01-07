@@ -15,63 +15,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Define types for our messages
-    interface TextContent {
-      type: "text";
-      text: string;
-    }
-
-    interface ImageContent {
-      type: "image";
-      data: string;
-      format: string;
-    }
-
-    interface MultimodalMessage {
-      role: string;
-      content: (TextContent | ImageContent)[];
-    }
-
-    interface TextMessage {
-      role: string;
-      content: string;
-    }
-
-    interface ImageMessage {
-      role: string;
-      content: string;
-      imageUrl: string;
-    }
-
-    type Message = TextMessage | MultimodalMessage | ImageMessage;
-
-    // Transform messages to support image input modalities
-    const transformedMessages = messages.map((msg: Message) => {
-      if ("imageUrl" in msg && msg.imageUrl) {
-        // Extract base64 from data URL if needed
-        const imageBase64 = msg.imageUrl.startsWith("data:")
-          ? msg.imageUrl.split(",")[1]
-          : msg.imageUrl;
-
-        // Create a multimodal message with both text and image
+    // Enhance the prompt to be more legal-focused
+    const enhancedMessages = messages.map((msg, index) => {
+      if (index === 0) {
+        // Add system instruction for legal context at the beginning
         return {
-          role: msg.role,
-          content: [
-            ...(msg.content ? [{ type: "text", text: msg.content }] : []),
-            {
-              type: "image",
-              data: imageBase64, // base64 encoded image
-              format: "base64", // specify the format
-            },
-          ],
-        };
-      } else {
-        // Regular text-only message
-        return {
-          role: msg.role,
-          content: msg.content,
+          role: "system",
+          content:
+            "You are an approachable legal advisor. Provide helpful and friendly guidance related to legal matters, compliance, contracts, regulations, and legal procedures. For casual greetings like 'hello', respond warmly and naturally. For legal questions, provide concise and informative responses. Be engaging and encourage further discussion. Note: You provide information for educational purposes only, not formal legal advice.",
         };
       }
+      return msg;
     });
 
     const response = await fetch(
@@ -82,11 +36,11 @@ export async function POST(req: NextRequest) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${OPENROUTER_API_KEY}`,
           "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL as string,
-          "X-Title": "AI Chat",
+          "X-Title": "Legal AI Assistant",
         },
         body: JSON.stringify({
           model: MODEL,
-          messages: transformedMessages,
+          messages: enhancedMessages,
           stream: true,
         }),
       }
@@ -94,7 +48,7 @@ export async function POST(req: NextRequest) {
 
     if (!response.ok) {
       const error = await response.text();
-      console.error("NVIDIA API error:", error);
+      console.error("OpenRouter API error:", error);
       return NextResponse.json(
         { error: "Failed to get response from AI" },
         { status: response.status }
@@ -124,7 +78,8 @@ export async function POST(req: NextRequest) {
               if (line.startsWith("data: ")) {
                 const data = line.slice(6);
                 if (data === "[DONE]") {
-                  break; // Instead of closing controller here, break and let finally clause handle it
+                  controller.close();
+                  return;
                 }
 
                 try {
@@ -160,7 +115,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error in chat API:", error);
+    console.error("Error in legal API:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
