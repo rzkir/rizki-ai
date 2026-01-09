@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const MODEL = process.env.NEXT_PUBLIC_MODEL_XIOMI_MARKETING;
+const MODEL = process.env.NEXT_PUBLIC_MODEL_XIOMI;
 
-const OPENROUTER_API_KEY = process.env.NEXT_PUBLIC_API_KEY_XIOMI_MARKETING;
+const OPENROUTER_API_KEY = process.env.NEXT_PUBLIC_API_KEY_XIOMI_CHAT;
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,17 +15,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Enhance the prompt to be more marketing-focused
-    const enhancedMessages = messages.map((msg, index) => {
-      if (index === 0) {
-        // Add system instruction for marketing context at the beginning
-        return {
-          role: "system",
-          content:
-            "You are an approachable marketing advisor. Provide helpful and friendly guidance related to marketing, branding, customer acquisition, campaign optimization, and digital marketing. For casual greetings like 'hello', respond warmly and naturally. For marketing questions, provide concise and actionable responses. Be engaging and encourage further discussion.",
-        };
-      }
-      return msg;
+    // Define types for our messages
+    interface TextMessage {
+      role: string;
+      content: string;
+    }
+
+    type Message = TextMessage;
+
+    // Transform messages - only handle text content
+    const transformedMessages = messages.map((msg: Message) => {
+      return {
+        role: msg.role,
+        content: typeof msg.content === "string" ? msg.content : "",
+      };
     });
 
     const response = await fetch(
@@ -36,11 +39,11 @@ export async function POST(req: NextRequest) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${OPENROUTER_API_KEY}`,
           "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL as string,
-          "X-Title": "Marketing AI Assistant",
+          "X-Title": "AI Chat",
         },
         body: JSON.stringify({
           model: MODEL,
-          messages: enhancedMessages,
+          messages: transformedMessages,
           stream: true,
         }),
       }
@@ -48,7 +51,7 @@ export async function POST(req: NextRequest) {
 
     if (!response.ok) {
       const error = await response.text();
-      console.error("OpenRouter API error:", error);
+      console.error("NVIDIA API error:", error);
       return NextResponse.json(
         { error: "Failed to get response from AI" },
         { status: response.status }
@@ -78,8 +81,7 @@ export async function POST(req: NextRequest) {
               if (line.startsWith("data: ")) {
                 const data = line.slice(6);
                 if (data === "[DONE]") {
-                  controller.close();
-                  return;
+                  break; // Instead of closing controller here, break and let finally clause handle it
                 }
 
                 try {
@@ -115,7 +117,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error in marketing API:", error);
+    console.error("Error in chat API:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

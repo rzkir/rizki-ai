@@ -3,20 +3,18 @@
 import * as React from "react"
 import {
   IconCamera,
-  IconChartBar,
-  IconDashboard,
   IconDatabase,
   IconFileAi,
   IconFileDescription,
   IconFileWord,
-  IconFolder,
   IconHelp,
   IconInnerShadowTop,
-  IconListDetails,
+  IconTextRecognition,
   IconReport,
   IconSearch,
   IconSettings,
-  IconUsers,
+  IconPolaroid,
+  IconVideo
 } from "@tabler/icons-react"
 
 import { NavDocuments } from "@/components/nav-documents"
@@ -41,29 +39,45 @@ const data = {
   },
   navMain: [
     {
-      title: "Beranda",
-      url: "/",
-      icon: IconDashboard,
+      title: "Text",
+      url: "/text",
+      icon: IconTextRecognition,
+      items: [
+        {
+          title: "Programming",
+          url: "/programming",
+        },
+        {
+          title: "Academia",
+          url: "/academia",
+        },
+        {
+          title: "Image Analysis",
+          url: "/image-analysis",
+        },
+        {
+          title: "Legal",
+          url: "/legal",
+        },
+        {
+          title: "Marketing",
+          url: "/marketing",
+        },
+        {
+          title: "Finance",
+          url: "/finance",
+        },
+      ],
     },
     {
-      title: "Image",
-      url: "/image",
-      icon: IconListDetails,
+      title: "Image Generator",
+      url: "/image-generator",
+      icon: IconPolaroid,
     },
     {
-      title: "Marketing",
-      url: "/marketing",
-      icon: IconChartBar,
-    },
-    {
-      title: "Legal",
-      url: "/legal",
-      icon: IconFolder,
-    },
-    {
-      title: "Academia",
-      url: "/academia",
-      icon: IconUsers,
+      title: "Video Generator",
+      url: "/video-generator",
+      icon: IconVideo,
     },
   ],
   navClouds: [
@@ -158,11 +172,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
+              className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
               <a href="#">
-                <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Acme Inc.</span>
+                <IconInnerShadowTop className="size-5!" />
+                <span className="text-base font-semibold">Rizki Ai.</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>

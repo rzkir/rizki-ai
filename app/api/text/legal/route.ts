@@ -15,18 +15,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Enhance the prompt to be more academia-focused
-    const enhancedMessages = messages.map((msg, index) => {
-      if (index === 0) {
-        // Add system instruction for academia context at the beginning
-        return {
-          role: "system",
-          content:
-            "You are an approachable academic advisor. Provide helpful and friendly guidance related to research, studies, academic writing, scholarly analysis, and educational topics. For casual greetings like 'hello', respond warmly and naturally. For academic questions, provide detailed, evidence-based responses. Be engaging and encourage further discussion.",
-        };
-      }
-      return msg;
-    });
+    // Enhance the prompt to be more legal-focused
+    // Check if system message already exists
+    const hasSystemMessage = messages.some((msg) => msg.role === "system");
+
+    // Add system instruction for legal context at the beginning if it doesn't exist
+    const enhancedMessages = hasSystemMessage
+      ? messages
+      : [
+          {
+            role: "system",
+            content:
+              "You are an approachable legal advisor. Provide helpful and friendly guidance related to legal matters, compliance, contracts, regulations, and legal procedures. For legal questions, provide concise and informative responses. Be engaging and encourage further discussion. Note: You provide information for educational purposes only, not formal legal advice.",
+          },
+          ...messages,
+        ];
 
     const response = await fetch(
       "https://openrouter.ai/api/v1/chat/completions",
@@ -36,7 +39,7 @@ export async function POST(req: NextRequest) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${OPENROUTER_API_KEY}`,
           "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL as string,
-          "X-Title": "Academic AI Assistant",
+          "X-Title": "Legal AI Assistant",
         },
         body: JSON.stringify({
           model: MODEL,
@@ -115,7 +118,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Error in academia API:", error);
+    console.error("Error in legal API:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

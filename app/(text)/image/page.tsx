@@ -1,6 +1,6 @@
 import { Metadata } from 'next'
 
-import ImageLayout from '@/components/content/image/Image';
+import ImageLayout from '@/components/content/image-analysis/ImageAnalysis';
 
 import { imageMetadata } from '@/helper/meta/Metadata';
 
@@ -11,3 +11,4 @@ export default function page() {
         <ImageLayout />
     )
 }
+

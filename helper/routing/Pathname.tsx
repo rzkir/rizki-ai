@@ -5,8 +5,11 @@ import React from "react";
 import { usePathname } from "next/navigation";
 
 import { AppSidebar } from "@/components/app-sidebar";
+
 import { SiteHeader } from "@/components/site-header";
+
 import Footer from "@/layout/Footer";
+
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 import { Toaster } from "sonner";

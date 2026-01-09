@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 
@@ -16,33 +16,36 @@ import { streamChat } from '@/lib/api-client';
 
 import { API_ENDPOINTS } from '@/lib/config';
 
-import { useTextareaRef } from '@/hooks/text-areaRef';
-
 export default function Chat() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    const { textareaRef, resetHeight } = useTextareaRef({ input });
+
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!input.trim() || isLoading) return;
 
         const inputText = input.trim();
-        setInput('');
-        resetHeight();
 
-        const userMessage: Message = { role: 'user', content: inputText };
+        // Prepare user message
+        const userMessage: Message = {
+            role: 'user',
+            content: inputText
+        };
+
         const newMessages = [...messages, userMessage];
         setMessages(newMessages);
+        setInput('');
+
         setIsLoading(true);
 
         const assistantMessageIndex = newMessages.length;
         setMessages([...newMessages, { role: 'assistant', content: '' }]);
-
-        let finalContent = '';
 
         const handleError = () => {
             setMessages(prev => {
@@ -57,10 +60,9 @@ export default function Chat() {
 
         try {
             await streamChat({
-                endpoint: API_ENDPOINTS.academia,
+                endpoint: API_ENDPOINTS.programming,
                 messages: newMessages,
                 onChunk: (content) => {
-                    finalContent = content;
                     setMessages(prev => {
                         const updated = [...prev];
                         updated[assistantMessageIndex] = {
@@ -72,23 +74,6 @@ export default function Chat() {
                 },
                 onError: handleError
             });
-
-            // Setelah selesai menerima semua data, jika ini adalah pesan pertama, tambahkan sambutan tambahan
-            if (messages.length === 0 && finalContent) {
-                setMessages(prev => {
-                    const updated = [...prev];
-                    const lastAssistantMessage = updated[updated.length - 1];
-                    if (lastAssistantMessage && lastAssistantMessage.role === 'assistant') {
-                        // Tambahkan sambutan menarik ke pesan asisten terakhir
-                        const welcomeAddition = '\n\nSaya di sini untuk membantu menjawab pertanyaan akademikmu, memberikan saran tentang metodologi penelitian, atau membantu memahami konsep-konsep kompleks. Apa yang ingin kamu pelajari hari ini? 📚';
-                        updated[updated.length - 1] = {
-                            ...lastAssistantMessage,
-                            content: lastAssistantMessage.content + welcomeAddition
-                        };
-                    }
-                    return updated;
-                });
-            }
         } catch (error) {
             console.error('Error:', error);
             handleError();
@@ -112,61 +97,66 @@ export default function Chat() {
                             {/* Welcome Message */}
                             <div className="text-center space-y-4">
                                 <h1 className="text-4xl font-bold tracking-tight text-foreground leading-tight">
-                                    Academic AI Assistant
+                                    How can I help you today?
                                 </h1>
-                                <p className="text-lg text-muted-foreground">
-                                    Get expert guidance on research, studies, and academic topics
-                                </p>
                             </div>
 
-                            {/* Suggested Academic Actions */}
+                            {/* Suggested Actions */}
                             <div className="grid grid-cols-2 gap-3 w-full max-w-2xl">
                                 <Card
                                     className="cursor-pointer hover:border-primary/50 transition-all hover:bg-muted/50 py-4"
-                                    onClick={() => setInput('Explain the research methodology for academic studies')}
+                                    onClick={() => setInput('Tulis kode untuk tombol modern')}
                                 >
                                     <CardContent className="p-0 px-4">
                                         <p className="text-sm font-medium text-foreground leading-relaxed">
-                                            Research Methodology
+                                            Tulis kode untuk tombol modern
                                         </p>
                                     </CardContent>
                                 </Card>
 
                                 <Card
                                     className="cursor-pointer hover:border-primary/50 transition-all hover:bg-muted/50 py-4"
-                                    onClick={() => setInput('How to write a literature review')}
+                                    onClick={() => setInput('Jelaskan apa itu React 19')}
                                 >
                                     <CardContent className="p-0 px-4">
                                         <p className="text-sm font-medium text-foreground leading-relaxed">
-                                            Literature Review
+                                            Jelaskan apa itu React 19
                                         </p>
                                     </CardContent>
                                 </Card>
 
                                 <Card
                                     className="cursor-pointer hover:border-primary/50 transition-all hover:bg-muted/50 py-4"
-                                    onClick={() => setInput('What are the key components of a research paper')}
+                                    onClick={() => setInput('Buat ide konten media sosial')}
                                 >
                                     <CardContent className="p-0 px-4">
                                         <p className="text-sm font-medium text-foreground leading-relaxed">
-                                            Research Paper Structure
+                                            Buat ide konten media sosial
                                         </p>
                                     </CardContent>
                                 </Card>
 
                                 <Card
                                     className="cursor-pointer hover:border-primary/50 transition-all hover:bg-muted/50 py-4"
-                                    onClick={() => setInput('How to conduct data analysis for academic research')}
+                                    onClick={() => setInput('Rangkum artikel tentang AI')}
                                 >
                                     <CardContent className="p-0 px-4">
                                         <p className="text-sm font-medium text-foreground leading-relaxed">
-                                            Data Analysis
+                                            Rangkum artikel tentang AI
                                         </p>
                                     </CardContent>
                                 </Card>
                             </div>
 
-
+                            {/* AI Assistant Greeting */}
+                            <div className="bg-transparent rounded-lg p-4 max-w-2xl mx-auto flex items-start gap-3">
+                                <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-1">
+                                    <MessageSquare className="w-4 h-4 text-primary" />
+                                </div>
+                                <p className="text-foreground/90 text-sm leading-relaxed">
+                                    Hello! I&apos;m your modern AI assistant. How can I help you today?
+                                </p>
+                            </div>
                         </div>
                     </div>
                 ) : (
@@ -213,11 +203,10 @@ export default function Chat() {
                     <div className="flex gap-2 items-end">
                         <div className="flex-1 relative">
                             <Textarea
-                                ref={textareaRef}
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
-                                placeholder={"Ask academic questions..."}
-                                className="min-h-[60px] max-h-[200px] resize-none bg-card border border-border/60 focus-visible:border-primary/50 focus-visible:ring-primary/20 pr-12 text-foreground placeholder:text-muted-foreground placeholder:text-sm overflow-y-auto"
+                                placeholder={"Ask ChatGPT..."}
+                                className="min-h-13 max-h-50 resize-none bg-card border border-border/60 focus-visible:border-primary/50 focus-visible:ring-primary/20 pr-12 text-foreground placeholder:text-muted-foreground placeholder:text-sm"
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' && !e.shiftKey) {
                                         e.preventDefault();
@@ -225,25 +214,22 @@ export default function Chat() {
                                     }
                                 }}
                                 disabled={isLoading}
-                                rows={1}
                             />
                         </div>
-                        <div className="flex gap-2">
-                            <Button
-                                type="submit"
-                                disabled={!input.trim() || isLoading}
-                                className="shrink-0 w-10 h-10 rounded-full bg-transparent hover:bg-sidebar-accent text-foreground p-0"
-                            >
-                                {isLoading ? (
-                                    <Loader2 className="h-5 w-5 animate-spin" />
-                                ) : (
-                                    <Send className="h-5 w-5" />
-                                )}
-                            </Button>
-                        </div>
+                        <Button
+                            type="submit"
+                            disabled={!input.trim() || isLoading}
+                            className="shrink-0 w-10 h-10 rounded-full bg-transparent hover:bg-sidebar-accent text-foreground p-0"
+                        >
+                            {isLoading ? (
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                            ) : (
+                                <Send className="h-5 w-5" />
+                            )}
+                        </Button>
                     </div>
                     <p className="text-xs text-muted-foreground text-center mt-2">
-                        Academic AI Assistant may provide information that should be verified through scholarly sources.
+                        ChatGPT can make mistakes. Check important info.
                     </p>
                 </form>
             </div>

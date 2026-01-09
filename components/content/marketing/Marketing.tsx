@@ -1,30 +1,21 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Send, Loader2, User, MessageSquare, Compass } from 'lucide-react';
 import { MarkdownRenderer } from '@/components/markdown-renderer';
-
-interface Message {
-    role: 'user' | 'assistant';
-    content: string;
-}
+import { streamChat } from '@/lib/api-client';
+import { API_ENDPOINTS } from '@/lib/config';
+import { useTextareaRef } from '@/hooks/text-areaRef';
 
 export default function Chat() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    };
-
-    useEffect(() => {
-        scrollToBottom();
-    }, [messages]);
+    const { textareaRef, resetHeight } = useTextareaRef({ input });
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -32,6 +23,7 @@ export default function Chat() {
 
         const inputText = input.trim();
         setInput('');
+        resetHeight();
 
         const userMessage: Message = { role: 'user', content: inputText };
         const newMessages = [...messages, userMessage];
@@ -41,66 +33,7 @@ export default function Chat() {
         const assistantMessageIndex = newMessages.length;
         setMessages([...newMessages, { role: 'assistant', content: '' }]);
 
-        try {
-            const response = await fetch('/api/marketing', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    messages: newMessages.map(msg => ({
-                        role: msg.role,
-                        content: msg.content,
-                    })),
-                }),
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to get response');
-            }
-
-            const reader = response.body?.getReader();
-            const decoder = new TextDecoder();
-
-            if (!reader) {
-                throw new Error('No response body');
-            }
-
-            let accumulatedContent = '';
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                const chunk = decoder.decode(value, { stream: true });
-                const lines = chunk.split('\n');
-
-                for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        const data = line.slice(6);
-                        if (data === '[DONE]') break;
-
-                        try {
-                            const json = JSON.parse(data);
-                            if (json.content) {
-                                accumulatedContent += json.content;
-                                setMessages(prev => {
-                                    const updated = [...prev];
-                                    updated[assistantMessageIndex] = {
-                                        role: 'assistant',
-                                        content: accumulatedContent,
-                                    };
-                                    return updated;
-                                });
-                            }
-                        } catch {
-                            // Skip invalid JSON
-                        }
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('Error:', error);
+        const handleError = () => {
             setMessages(prev => {
                 const updated = [...prev];
                 updated[assistantMessageIndex] = {
@@ -109,6 +42,27 @@ export default function Chat() {
                 };
                 return updated;
             });
+        };
+
+        try {
+            await streamChat({
+                endpoint: API_ENDPOINTS.marketing,
+                messages: newMessages,
+                onChunk: (content) => {
+                    setMessages(prev => {
+                        const updated = [...prev];
+                        updated[assistantMessageIndex] = {
+                            role: 'assistant',
+                            content: content,
+                        };
+                        return updated;
+                    });
+                },
+                onError: handleError
+            });
+        } catch (error) {
+            console.error('Error:', error);
+            handleError();
         } finally {
             setIsLoading(false);
         }
@@ -243,10 +197,11 @@ export default function Chat() {
                     <div className="flex gap-2 items-end">
                         <div className="flex-1 relative">
                             <Textarea
+                                ref={textareaRef}
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 placeholder={"Ask marketing questions..."}
-                                className="min-h-13 max-h-50 resize-none bg-card border border-border/60 focus-visible:border-primary/50 focus-visible:ring-primary/20 pr-12 text-foreground placeholder:text-muted-foreground placeholder:text-sm"
+                                className="min-h-[60px] max-h-[200px] resize-none bg-card border border-border/60 focus-visible:border-primary/50 focus-visible:ring-primary/20 pr-12 text-foreground placeholder:text-muted-foreground placeholder:text-sm overflow-y-auto"
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' && !e.shiftKey) {
                                         e.preventDefault();
@@ -254,6 +209,7 @@ export default function Chat() {
                                     }
                                 }}
                                 disabled={isLoading}
+                                rows={1}
                             />
                         </div>
                         <div className="flex gap-2">
