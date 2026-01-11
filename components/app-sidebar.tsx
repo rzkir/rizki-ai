@@ -9,12 +9,15 @@ import {
   IconFileWord,
   IconHelp,
   IconInnerShadowTop,
-  IconTextRecognition,
   IconReport,
   IconSearch,
   IconSettings,
   IconPolaroid,
-  IconVideo
+  IconVideo,
+  IconBook,
+  IconHeart,
+  IconBriefcase,
+  IconAi
 } from "@tabler/icons-react"
 
 import { NavDocuments } from "@/components/nav-documents"
@@ -39,22 +42,74 @@ const data = {
   },
   navMain: [
     {
-      title: "Text",
-      url: "/text",
-      icon: IconTextRecognition,
+      title: "Tech Hub",
+      url: "/tech-hub",
+      icon: IconAi,
       items: [
         {
           title: "Programming",
           url: "/programming",
         },
         {
-          title: "Academia",
-          url: "/academia",
+          title: "Technology",
+          url: "/technology",
         },
+      ],
+    },
+    {
+      title: "Personal",
+      url: "/personal",
+      icon: IconHeart,
+      items: [
+        {
+          title: "Teman Curhat",
+          url: "/curhat",
+        },
+        {
+          title: "Health",
+          url: "/health",
+        },
+      ],
+    },
+    {
+      title: "Image Generator",
+      url: "/image",
+      icon: IconPolaroid,
+      items: [
         {
           title: "Image Analysis",
           url: "/image-analysis",
         },
+        {
+          title: "Image Generator",
+          url: "/image-generator",
+        },
+      ],
+    },
+    {
+      title: "Education",
+      url: "/edu",
+      icon: IconBook,
+      items: [
+        {
+          title: "Academia",
+          url: "/academia",
+        },
+        {
+          title: "Science",
+          url: "/science",
+        },
+        {
+          title: "Translation",
+          url: "/translation",
+        },
+      ],
+    },
+    {
+      title: "Professional",
+      url: "/pro",
+      icon: IconBriefcase,
+      items: [
         {
           title: "Legal",
           url: "/legal",
@@ -67,17 +122,26 @@ const data = {
           title: "Finance",
           url: "/finance",
         },
+        {
+          title: "SEO",
+          url: "/seo",
+        }
       ],
     },
     {
-      title: "Image Generator",
-      url: "/image-generator",
-      icon: IconPolaroid,
-    },
-    {
-      title: "Video Generator",
-      url: "/video-generator",
+      title: "Video",
+      url: "/video",
       icon: IconVideo,
+      items: [
+        {
+          title: "Video Analysis",
+          url: "/video-analysis",
+        },
+        {
+          title: "Video Generator",
+          url: "/video-generator",
+        },
+      ],
     },
   ],
   navClouds: [

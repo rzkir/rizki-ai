@@ -2,6 +2,7 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   imageUrl?: string;
+  videoUrl?: string;
 }
 
 interface StreamChatOptions {
@@ -33,6 +34,7 @@ export async function streamChat({
           role: msg.role,
           content: msg.content,
           ...(msg.imageUrl && { imageUrl: msg.imageUrl }),
+          ...(msg.videoUrl && { videoUrl: msg.videoUrl }),
         })),
       }),
     });
