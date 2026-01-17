@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 
 import { Button } from '@/components/ui/button';
 
@@ -11,6 +11,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Send, Loader2, User, MessageSquare, Compass } from 'lucide-react';
 
 import { MarkdownRenderer } from '@/components/markdown-renderer';
+
+import { LoadingDots } from '@/components/LoadingDots';
 
 import { streamChat } from '@/lib/api-client';
 
@@ -24,11 +26,105 @@ export default function Chat() {
     const [isLoading, setIsLoading] = useState(false);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const messagesContainerRef = useRef<HTMLDivElement>(null);
+    const isUserScrollingRef = useRef<boolean>(false);
+    const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const isProgrammaticScrollRef = useRef<boolean>(false);
+    const autoScrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const { textareaRef, resetHeight } = useTextareaRef({ input });
 
+    // Helper function to check if user is near bottom of scroll container
+    const isNearBottom = useCallback(
+        (container: HTMLElement, threshold = 100) => {
+            const { scrollTop, scrollHeight, clientHeight } = container;
+            return scrollHeight - scrollTop - clientHeight < threshold;
+        },
+        []
+    );
+
+    // Helper function to perform programmatic scroll
+    const performScroll = useCallback(() => {
+        if (!messagesEndRef.current || isUserScrollingRef.current) return;
+
+        isProgrammaticScrollRef.current = true;
+        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+
+        setTimeout(() => {
+            isProgrammaticScrollRef.current = false;
+        }, 500);
+    }, []);
+
+    // Helper function to clear all timeouts
+    const clearAllTimeouts = useCallback(() => {
+        if (scrollTimeoutRef.current) {
+            clearTimeout(scrollTimeoutRef.current);
+            scrollTimeoutRef.current = null;
+        }
+        if (autoScrollTimeoutRef.current) {
+            clearTimeout(autoScrollTimeoutRef.current);
+            autoScrollTimeoutRef.current = null;
+        }
+    }, []);
+
+    // Auto-scroll with debounce - only if user is not manually scrolling
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+        if (!messagesContainerRef.current || !messagesEndRef.current || isUserScrollingRef.current) {
+            return;
+        }
+
+        if (autoScrollTimeoutRef.current) {
+            clearTimeout(autoScrollTimeoutRef.current);
+        }
+
+        autoScrollTimeoutRef.current = setTimeout(() => {
+            if (isUserScrollingRef.current) return;
+
+            const container = messagesContainerRef.current;
+            if (!container) return;
+
+            if (isNearBottom(container, 50)) {
+                requestAnimationFrame(() => {
+                    setTimeout(() => performScroll(), 50);
+                });
+            }
+        }, 300);
+
+        return () => {
+            if (autoScrollTimeoutRef.current) {
+                clearTimeout(autoScrollTimeoutRef.current);
+            }
+        };
+    }, [messages, isNearBottom, performScroll]);
+
+    // Handle manual scroll detection
+    const handleScroll = useCallback(() => {
+        if (!messagesContainerRef.current || isProgrammaticScrollRef.current) return;
+
+        isUserScrollingRef.current = true;
+
+        if (scrollTimeoutRef.current) {
+            clearTimeout(scrollTimeoutRef.current);
+        }
+
+        scrollTimeoutRef.current = setTimeout(() => {
+            if (messagesContainerRef.current && isNearBottom(messagesContainerRef.current, 50)) {
+                isUserScrollingRef.current = false;
+                performScroll();
+            }
+        }, 2000);
+    }, [isNearBottom, performScroll]);
+
+    // Add scroll event listener
+    useEffect(() => {
+        const container = messagesContainerRef.current;
+        if (!container) return;
+
+        container.addEventListener('scroll', handleScroll);
+        return () => {
+            container.removeEventListener('scroll', handleScroll);
+            clearAllTimeouts();
+        };
+    }, [handleScroll, clearAllTimeouts]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -41,6 +137,14 @@ export default function Chat() {
         const userMessage: Message = { role: 'user', content: inputText };
         const newMessages = [...messages, userMessage];
         setMessages(newMessages);
+
+        // Reset manual scroll flag when user sends a new message
+        isUserScrollingRef.current = false;
+        clearAllTimeouts();
+
+        // Force scroll to bottom immediately when user sends a message
+        setTimeout(() => performScroll(), 50);
+
         setIsLoading(true);
 
         const assistantMessageIndex = newMessages.length;
@@ -104,7 +208,7 @@ export default function Chat() {
     return (
         <div className="flex flex-col min-h-screen bg-background">
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto">
+            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto">
                 {messages.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center p-8">
                         <div className="max-w-4xl w-full space-y-8 flex flex-col items-center">
@@ -193,6 +297,8 @@ export default function Chat() {
                                 >
                                     {message.role === 'user' ? (
                                         <p className="whitespace-pre-wrap wrap-break-word text-base leading-relaxed text-foreground/95">{message.content}</p>
+                                    ) : message.content === '' ? (
+                                        <LoadingDots />
                                     ) : (
                                         <div className="text-foreground prose prose-sm max-w-none">
                                             <MarkdownRenderer content={message.content} />

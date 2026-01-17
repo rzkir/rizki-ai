@@ -2,9 +2,7 @@
 
 import * as React from "react"
 
-import { IconCirclePlusFilled, IconChevronDown, IconChevronRight, IconMail, type Icon } from "@tabler/icons-react"
-
-import { Button } from "@/components/ui/button"
+import { IconCirclePlusFilled, IconChevronDown, IconChevronRight, type Icon } from "@tabler/icons-react"
 
 import Link from "next/link"
 
@@ -46,24 +44,21 @@ export function NavMain({
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
         <SidebarMenu>
-          <SidebarMenuItem className="flex items-center gap-2">
+          <SidebarMenuItem>
             <SidebarMenuButton
-              tooltip="Quick Create"
-              className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
+              tooltip="Initiate New Core"
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground rounded-lg px-4 py-3 font-medium duration-200 ease-linear justify-start gap-2"
             >
-              <IconCirclePlusFilled />
-              <span>Quick Create</span>
+              <IconCirclePlusFilled className="size-5" />
+              <span>+ Initiate New Core</span>
             </SidebarMenuButton>
-            <Button
-              size="icon"
-              className="size-8 group-data-[collapsible=icon]:opacity-0"
-              variant="outline"
-            >
-              <IconMail />
-              <span className="sr-only">Inbox</span>
-            </Button>
           </SidebarMenuItem>
         </SidebarMenu>
+        <div className="px-2 py-4">
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            NAVIGATION
+          </h3>
+        </div>
         <SidebarMenu>
           {items.map((item) => {
             const isOpen = openItems[item.title] ?? false
@@ -74,8 +69,11 @@ export function NavMain({
               return (
                 <SidebarMenuItem key={item.title}>
                   <Link href={item.url}>
-                    <SidebarMenuButton tooltip={item.title}>
-                      {item.icon && <item.icon />}
+                    <SidebarMenuButton
+                      tooltip={item.title}
+                      className="text-foreground hover:bg-sidebar-accent/50 rounded-lg"
+                    >
+                      {item.icon && <item.icon className="size-5" />}
                       <span>{item.title}</span>
                     </SidebarMenuButton>
                   </Link>
@@ -91,10 +89,10 @@ export function NavMain({
                     <div className="flex-1">
                       <SidebarMenuButton
                         tooltip={item.title}
-                        className="w-full"
+                        className="w-full text-foreground hover:bg-sidebar-accent/50 rounded-lg"
                         onClick={() => toggleItem(item.title)}
                       >
-                        {item.icon && <item.icon />}
+                        {item.icon && <item.icon className="size-5" />}
                         <span>{item.title}</span>
                         <div className="ml-auto">
                           {isOpen ? (
@@ -115,7 +113,10 @@ export function NavMain({
                     <SidebarMenuSub>
                       {item.items?.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton asChild>
+                          <SidebarMenuSubButton
+                            asChild
+                            className="text-foreground/80 hover:text-foreground hover:bg-sidebar-accent/30 rounded-lg"
+                          >
                             <Link href={subItem.url}>
                               <span>{subItem.title}</span>
                             </Link>
@@ -129,6 +130,29 @@ export function NavMain({
             )
           })}
         </SidebarMenu>
+        <div className="px-2 py-4 mt-4">
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+            NEURAL THREADS
+          </h3>
+          <div className="space-y-2">
+            {[
+              "Modern Web Design Tips",
+              "Next.js 16 Features",
+              "Tailwind CSS v4 Guide",
+              "React Server Components",
+              "AI Integration Tutorial"
+            ].map((thread) => (
+              <Link
+                key={thread}
+                href="/programming"
+                className="flex items-center gap-2 px-2 py-1.5 text-sm text-foreground hover:text-primary transition-colors rounded-lg hover:bg-sidebar-accent/30 group"
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-primary group-hover:bg-primary/80 transition-colors" />
+                <span>{thread}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
       </SidebarGroupContent>
     </SidebarGroup>
   )
