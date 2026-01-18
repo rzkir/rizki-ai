@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
     try {
-        const { prompt } = await req.json();
+        const { prompt, width, height } = await req.json();
 
         if (!prompt) {
-            return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
+            return NextResponse.json(
+                { error: "Prompt is required" },
+                { status: 400 }
+            );
         }
 
         // Validate environment variables
@@ -26,6 +29,17 @@ export async function POST(req: NextRequest) {
             );
         }
 
+        // Prepare request body
+        const requestBody: {
+            prompt: string;
+            width: number;
+            height: number;
+        } = {
+            prompt,
+            width: width ? parseInt(width.toString()) : 1024,
+            height: height ? parseInt(height.toString()) : 1024,
+        };
+
         // Fetch image from AI API
         const res = await fetch(apiUrl, {
             method: "POST",
@@ -33,7 +47,7 @@ export async function POST(req: NextRequest) {
                 Authorization: `Bearer ${apiKey}`,
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({ prompt }),
+            body: JSON.stringify(requestBody),
         });
 
         if (!res.ok) {
@@ -57,7 +71,9 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
             success: true,
             imageUrl,
-            prompt
+            prompt,
+            width: requestBody.width,
+            height: requestBody.height,
         });
 
     } catch (error) {
