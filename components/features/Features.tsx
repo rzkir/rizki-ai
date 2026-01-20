@@ -65,7 +65,7 @@ export default function Features() {
         },
     ];
     return (
-        <section className="py-20 sm:py-24 bg-muted/30">
+        <section className="py-20 sm:py-24">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="text-center mb-16">
                     <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
@@ -84,8 +84,8 @@ export default function Features() {
                         >
                             <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
                             <CardHeader>
-                                <div className={`inline-flex p-3 rounded-lg bg-gradient-to-br ${feature.color} mb-4 w-fit`}>
-                                    <feature.icon className="h-6 w-6 text-white" />
+                                <div className={`inline-flex p-3 rounded-lg bg-gradient-to-br ${feature.color} mb-4 w-fit transition-transform duration-300 group-hover:-translate-y-1 group-hover:scale-105`}>
+                                    <feature.icon className="h-6 w-6 text-white transition-transform duration-300 group-hover:scale-110" />
                                 </div>
                                 <CardTitle className="text-xl mb-2">{feature.title}</CardTitle>
                                 <CardDescription className="text-base">{feature.description}</CardDescription>
@@ -99,10 +99,11 @@ export default function Features() {
                                         </li>
                                     ))}
                                 </ul>
+
                                 <Button variant="outline" className="w-full group/btn" asChild>
                                     <Link href={feature.url}>
                                         Explore {feature.title}
-                                        <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover/btn:translate-x-1" />
+                                        <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover/btn:translate-x-1 group-hover:translate-x-1" />
                                     </Link>
                                 </Button>
                             </CardContent>

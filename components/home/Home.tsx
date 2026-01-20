@@ -68,12 +68,20 @@ export default function Home() {
         "Analisis video dan berikan ringkasan kontennya"
     ];
     return (
-        <section className="relative py-20 sm:py-32 lg:py-40  overflow-hidden">
-            {/* Light Effects Background */}
+        <section className="relative min-h-full md:min-h-screen py-20 sm:py-32 lg:py-40 overflow-hidden">
+            {/* Minimal, clean background */}
+            <div className="absolute inset-0 -z-20 overflow-hidden">
+                <div className="absolute inset-0 bg-linear-to-b from-background via-background/95 to-background" />
+                <div className="absolute -top-24 -left-16 h-[420px] w-[420px] rounded-full blur-[110px] bg-primary/18 opacity-70" />
+                <div className="absolute bottom-[-180px] right-[-60px] h-[500px] w-[500px] rounded-full blur-[130px] bg-emerald-400/14 opacity-60" />
+            </div>
+
+            {/* Subtle vignette + twin light lines */}
             <div className="absolute inset-0 -z-10">
-                {/* Additional Light Rays */}
-                <div className="absolute top-0 left-1/3 w-px h-full bg-gradient-to-b from-primary/30 via-primary/15 to-transparent dark:from-primary/40 dark:via-primary/20" />
-                <div className="absolute top-0 right-1/3 w-px h-full bg-gradient-to-b from-primary/30 via-primary/15 to-transparent dark:from-primary/40 dark:via-primary/20" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.08),transparent_55%)] dark:bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.06),transparent_55%)] mix-blend-multiply" />
+                <div className="absolute inset-x-12 top-16 h-64 rounded-full bg-white/4 dark:bg-white/3 blur-3xl" />
+                <div className="absolute inset-y-0 left-1/3 w-px -translate-x-1/2 bg-linear-to-b from-transparent via-primary/28 to-transparent opacity-70" />
+                <div className="absolute inset-y-0 right-1/3 w-px translate-x-1/2 bg-linear-to-b from-transparent via-primary/28 to-transparent opacity-70" />
             </div>
 
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
