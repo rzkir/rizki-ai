@@ -28,7 +28,7 @@ const links = {
     ],
     resources: [
         { label: "Blog", href: "/blog" },
-        { label: "Dokumentasi", href: "/docs" },
+        { label: "Changelog", href: "/changelog" },
         { label: "Bantuan", href: "/help" },
     ],
     terms: [
