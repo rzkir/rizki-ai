@@ -68,11 +68,12 @@ export default function Home() {
         "Analisis video dan berikan ringkasan kontennya"
     ];
     return (
-        <section className="relative min-h-full md:min-h-screen py-20 sm:py-32 lg:py-40 overflow-hidden">
+        <section className="relative min-h-full lg:min-h-screen py-20 sm:py-32 lg:py-40 overflow-hidden">
             {/* Minimal, clean background */}
             <div className="absolute inset-0 -z-20 overflow-hidden">
                 <div className="absolute inset-0 bg-linear-to-b from-background via-background/95 to-background" />
                 <div className="absolute -top-24 -left-16 h-[420px] w-[420px] rounded-full blur-[110px] bg-primary/18 opacity-70" />
+                <div className="absolute -bottom-24 -right-16 h-[420px] w-[420px] rounded-full blur-[110px] bg-primary/18 opacity-70" />
                 <div className="absolute bottom-[-180px] right-[-60px] h-[500px] w-[500px] rounded-full blur-[130px] bg-emerald-400/14 opacity-60" />
             </div>
 
@@ -83,6 +84,9 @@ export default function Home() {
                 <div className="absolute inset-y-0 left-1/3 w-px -translate-x-1/2 bg-linear-to-b from-transparent via-primary/28 to-transparent opacity-70" />
                 <div className="absolute inset-y-0 right-1/3 w-px translate-x-1/2 bg-linear-to-b from-transparent via-primary/28 to-transparent opacity-70" />
             </div>
+
+            {/* Dark overlay at bottom for smooth transition to features */}
+            <div className="absolute bottom-0 left-0 right-0 h-64 -z-10 bg-linear-to-t from-background via-background/80 to-transparent" />
 
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                 <div className="mx-auto max-w-4xl text-center">

@@ -8,6 +8,7 @@ interface UserAccount {
   email: string;
   displayName: string;
   role: Role;
+  provider?: "email" | "google" | "github";
   photoURL?: string;
   updatedAt: Date;
   isVerified?: "true" | "false";
@@ -20,16 +21,12 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<UserAccount>;
   loginWithGoogle: () => Promise<UserAccount>;
+  loginWithGithub: () => Promise<UserAccount>;
   logout: () => Promise<void>;
   deleteAccount: () => Promise<void>;
   hasRole: (roles: string | string[]) => boolean;
   getDashboardUrl: (userRole: string) => string;
-  signUp: (
-    email: string,
-    password: string,
-    displayName: string,
-    phone: string
-  ) => Promise<void>;
+  signUp: (email: string, password: string, displayName: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   showInactiveModal: boolean;
   setShowInactiveModal: (show: boolean) => void;

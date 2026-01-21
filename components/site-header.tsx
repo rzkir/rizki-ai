@@ -15,6 +15,9 @@ import {
   IconMenu2,
   IconChevronRight,
   IconLogin,
+  IconLogout,
+  IconUser,
+  IconLayoutDashboard,
 } from "@tabler/icons-react"
 
 import { Button } from "@/components/ui/button"
@@ -22,8 +25,12 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useAuth } from "@/utils/context/AuthContext"
 import {
   Sheet,
   SheetContent,
@@ -142,6 +149,7 @@ const navData = [
 export function SiteHeader() {
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false)
+  const { user, loading, logout, getDashboardUrl, hasRole } = useAuth()
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
@@ -217,12 +225,49 @@ export function SiteHeader() {
 
         <div className="ml-auto flex items-center gap-2">
           <ThemeToggler />
-          <Button variant="default" asChild size="sm" className="gap-2">
-            <Link href="/login">
-              <IconLogin className="size-4" />
-              <span className="hidden sm:inline">Login</span>
-            </Link>
-          </Button>
+          {!loading && (
+            user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user.photoURL} alt={user.displayName} />
+                      <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                        {user.displayName?.slice(0, 2).toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{user.displayName}</span>
+                      <span className="text-xs text-muted-foreground truncate">{user.email}</span>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href={getDashboardUrl(user.role)} className="flex items-center gap-2">
+                      {hasRole("admins") ? <IconLayoutDashboard className="size-4" /> : <IconUser className="size-4" />}
+                      <span>{hasRole("admins") ? "Dashboard" : "Profil"}</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => logout()} className="text-destructive focus:text-destructive gap-2">
+                    <IconLogout className="size-4" />
+                    <span>Logout</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button variant="default" asChild size="sm" className="gap-2">
+                <Link href="/login">
+                  <IconLogin className="size-4" />
+                  <span className="hidden sm:inline">Login</span>
+                </Link>
+              </Button>
+            )
+          )}
 
           {/* Mobile Menu */}
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
@@ -273,16 +318,43 @@ export function SiteHeader() {
                   )
                 })}
                 <div className="mt-4 pt-4 border-t border-border">
-                  <Button
-                    asChild
-                    className="w-full gap-2"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <Link href="/login">
-                      <IconLogin className="size-4" />
-                      <span>Login</span>
-                    </Link>
-                  </Button>
+                  {!loading && (
+                    user ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3 px-4 py-2">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={user.photoURL} alt={user.displayName} />
+                            <AvatarFallback className="bg-primary/10 text-primary">
+                              {user.displayName?.slice(0, 2).toUpperCase() || "U"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-medium truncate">{user.displayName}</span>
+                            <span className="text-xs text-muted-foreground truncate">{user.email}</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button asChild variant="outline" className="flex-1 gap-2" onClick={() => setMobileMenuOpen(false)}>
+                            <Link href={getDashboardUrl(user.role)}>
+                              {hasRole("admins") ? <IconLayoutDashboard className="size-4" /> : <IconUser className="size-4" />}
+                              <span>{hasRole("admins") ? "Dashboard" : "Profil"}</span>
+                            </Link>
+                          </Button>
+                          <Button variant="ghost" size="icon" className="text-destructive" onClick={() => { logout(); setMobileMenuOpen(false); }}>
+                            <IconLogout className="size-4" />
+                            <span className="sr-only">Logout</span>
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button asChild className="w-full gap-2" onClick={() => setMobileMenuOpen(false)}>
+                        <Link href="/login">
+                          <IconLogin className="size-4" />
+                          <span>Login</span>
+                        </Link>
+                      </Button>
+                    )
+                  )}
                 </div>
               </nav>
             </SheetContent>

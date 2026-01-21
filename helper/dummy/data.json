@@ -1,0 +1,173 @@
+{
+  "testimonials": [
+    {
+      "id": 1,
+      "text": "Exceeded our expectations with innovative designs that brought our vision to life - a truly remarkable creative agency.",
+      "name": "Samantha Johnson",
+      "title": "CEO and Co-founder of ABC Company",
+      "initials": "SJ"
+    },
+    {
+      "id": 2,
+      "text": "The team's expertise in AI technology transformed our business operations completely. Highly recommended for any organization.",
+      "name": "Isabella Rodriguez",
+      "title": "CTO at Tech Innovations",
+      "initials": "IR"
+    },
+    {
+      "id": 3,
+      "text": "Outstanding service and incredible results. They helped us achieve our goals faster than we ever imagined possible.",
+      "name": "John Peter",
+      "title": "Founder of StartupXYZ",
+      "initials": "JP"
+    },
+    {
+      "id": 4,
+      "text": "Professional, creative, and always delivering beyond expectations. This platform has revolutionized how we work.",
+      "name": "Natalie Martinez",
+      "title": "Marketing Director at Global Corp",
+      "initials": "NM"
+    },
+    {
+      "id": 5,
+      "text": "The best investment we've made for our company. The AI tools have increased our productivity by 300% in just months.",
+      "name": "Michael Chen",
+      "title": "Operations Manager",
+      "initials": "MC"
+    },
+    {
+      "id": 6,
+      "text": "Incredible platform with cutting-edge technology. Our team loves using it every single day for various tasks.",
+      "name": "Emily Davis",
+      "title": "Product Manager",
+      "initials": "ED"
+    },
+    {
+      "id": 7,
+      "text": "Game-changing solution for our workflow. The seamless integration and powerful features make it indispensable.",
+      "name": "David Wilson",
+      "title": "Senior Developer",
+      "initials": "DW"
+    },
+    {
+      "id": 8,
+      "text": "Exceptional quality and user experience. This platform has become an essential part of our daily operations.",
+      "name": "Sarah Thompson",
+      "title": "Design Lead",
+      "initials": "ST"
+    }
+  ],
+  "features": [
+    {
+      "title": "Tech Hub",
+      "description": "Programming assistance & technology insights powered by AI",
+      "icon": "Code",
+      "url": "/tech-hub",
+      "color": "from-blue-500 to-cyan-500",
+      "items": ["Code Generation", "Tech Solutions", "Debugging Help"]
+    },
+    {
+      "title": "Personal",
+      "description": "Your AI companion for health & emotional support",
+      "icon": "Heart",
+      "url": "/personal",
+      "color": "from-pink-500 to-rose-500",
+      "items": ["Health Advice", "Emotional Support", "Wellness Tips"]
+    },
+    {
+      "title": "Image AI",
+      "description": "Generate & analyze images with advanced AI technology",
+      "icon": "ImageIcon",
+      "url": "/image",
+      "color": "from-purple-500 to-pink-500",
+      "items": ["Image Generation", "Image Analysis", "Visual AI"]
+    },
+    {
+      "title": "Education",
+      "description": "Academic support, science insights & translation services",
+      "icon": "BookOpen",
+      "url": "/edu",
+      "color": "from-indigo-500 to-purple-500",
+      "items": ["Academia", "Science", "Translation"]
+    },
+    {
+      "title": "Professional",
+      "description": "Boost your business with AI-powered professional tools",
+      "icon": "Briefcase",
+      "url": "/pro",
+      "color": "from-emerald-500 to-teal-500",
+      "items": ["Legal", "Marketing", "Finance", "SEO"]
+    },
+    {
+      "title": "Video AI",
+      "description": "Create and analyze videos with cutting-edge AI",
+      "icon": "Video",
+      "url": "/video",
+      "color": "from-orange-500 to-red-500",
+      "items": ["Video Generation", "Video Analysis", "Content Creation"]
+    }
+  ],
+  "leaderboard": {
+    "donations": [
+      {
+        "name": "Prashant Deepak",
+        "amount": 8900100,
+        "message": "Untuk inovasi AI yang lebih baik",
+        "time": "2 menit lalu"
+      },
+      {
+        "name": "Towshif Rakib",
+        "amount": 6500100,
+        "message": "Keep pushing forward!",
+        "time": "12 menit lalu"
+      },
+      {
+        "name": "Rohit Katariya",
+        "amount": 5800100,
+        "message": "Bangun ekosistem yang kuat",
+        "time": "30 menit lalu"
+      },
+      {
+        "name": "Miles Esther",
+        "amount": 2000000,
+        "message": "Semangat terus tim!",
+        "time": "1 jam lalu"
+      },
+      {
+        "name": "Aulia Tech",
+        "amount": 1500000,
+        "message": "Keep building great tools!",
+        "time": "2 jam lalu"
+      },
+      {
+        "name": "Creative Labs",
+        "amount": 1200000,
+        "message": "Terima kasih atas inspirasinya",
+        "time": "3 jam lalu"
+      },
+      {
+        "name": "Fajar Studio",
+        "amount": 950000,
+        "message": "Sukses selalu!",
+        "time": "5 jam lalu"
+      },
+      {
+        "name": "Harapan Digital",
+        "amount": 750000,
+        "message": "Bantu scaling produk",
+        "time": "6 jam lalu"
+      },
+      {
+        "name": "Intan Syifa",
+        "amount": 420000,
+        "message": "Terima kasih bantuannya",
+        "time": "8 jam lalu"
+      }
+    ],
+    "prizePool": {
+      "monthly": 10000000,
+      "endsIn": "3 hari lagi",
+      "totalAvailable": 25000000
+    }
+  }
+}

@@ -9,6 +9,7 @@ import {
     signOut,
     onAuthStateChanged,
     GoogleAuthProvider,
+    GithubAuthProvider,
     signInWithPopup,
     createUserWithEmailAndPassword,
     sendPasswordResetEmail,
@@ -28,9 +29,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const getDashboardUrl = (userRole: string) => {
         switch (userRole) {
-            case Role.ADMIN:
+            case 'admins':
                 return `/dashboard`;
-            case Role.USER:
+            case 'user':
                 return `/profile`;
             default:
                 return '/';
@@ -47,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         // For regular users - redirect to home
-        if (userData.role === Role.USER) {
+        if (userData.role === 'user') {
             router.push('/');
             return;
         }
@@ -181,13 +182,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return `Selamat datang, ${displayName}!`;
     };
 
-    const createSocialUser = async (firebaseUser: FirebaseUser): Promise<UserAccount> => {
+    const createSocialUser = async (
+        firebaseUser: FirebaseUser,
+        provider: 'google' | 'github'
+    ): Promise<UserAccount> => {
         const userDocRef = doc(db, process.env.NEXT_PUBLIC_COLLECTIONS_ACCOUNTS as string, firebaseUser.uid);
         const userData: UserAccount = {
             uid: firebaseUser.uid,
             email: firebaseUser.email || '',
             displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || '',
-            role: Role.USER,
+            role: 'user' as Role,
+            provider,
             photoURL: firebaseUser.photoURL || undefined,
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -212,7 +217,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     email: result.user.email,
                     displayName: result.user.displayName,
                     photoURL: result.user.photoURL
-                });
+                }, 'google');
             } else {
                 userData = userDoc.data() as UserAccount;
             }
@@ -263,14 +268,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 uid: userCredential.user.uid,
                 email: email,
                 displayName: displayName,
-                role: Role.USER,
+                role: 'user' as Role,
+                provider: 'email',
                 createdAt: new Date(),
                 updatedAt: new Date(),
                 isActive: true
             };
 
             const userDocRef = doc(db, process.env.NEXT_PUBLIC_COLLECTIONS_ACCOUNTS, userCredential.user.uid);
-            await setDoc(userDocRef, userData);
+            await setDoc(userDocRef, userData, { merge: true });
 
             // Sign out immediately after creating account
             await signOut(auth);
@@ -330,7 +336,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const loginWithGithub = async (): Promise<UserAccount> => {
-        throw new Error('GitHub login not implemented');
+        try {
+            const provider = new GithubAuthProvider();
+            const result = await signInWithPopup(auth, provider);
+
+            const userDoc = await getDoc(
+                doc(
+                    db,
+                    process.env.NEXT_PUBLIC_COLLECTIONS_ACCOUNTS as string,
+                    result.user.uid
+                )
+            );
+            let userData: UserAccount;
+
+            if (!userDoc.exists()) {
+                userData = await createSocialUser({
+                    uid: result.user.uid,
+                    email: result.user.email,
+                    displayName: result.user.displayName,
+                    photoURL: result.user.photoURL
+                }, 'github');
+            } else {
+                userData = userDoc.data() as UserAccount;
+            }
+
+            if (!userData.isActive) {
+                setShowInactiveModal(true);
+                await signOut(auth);
+                return userData;
+            }
+
+            const idToken = await result.user.getIdToken();
+            await fetch('/api/auth/session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ idToken }),
+            });
+
+            setUser(userData);
+            toast.success(getWelcomeMessage(userData));
+            handleRedirect(userData);
+
+            return userData;
+        } catch (error) {
+            if (error instanceof Error && error.message.includes('auth/user-disabled')) {
+                setShowInactiveModal(true);
+            } else {
+                toast.error('Gagal login dengan GitHub');
+            }
+            throw error;
+        }
     };
 
     const value = {

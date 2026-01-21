@@ -4,8 +4,11 @@ import Home from '@/components/home/Home';
 
 import Features from '@/components/features/Features';
 
-import Join from '@/components/join/Join';
 import Leaderboard from '@/components/leaderboard/Leaderboard';
+
+import Community from '@/components/community/Community';
+
+import Join from '@/components/join/Join';
 
 export default function page() {
   return (
@@ -14,6 +17,7 @@ export default function page() {
       <Features />
       <Leaderboard />
       <Join />
+      <Community />
     </Fragment>
   )
 }

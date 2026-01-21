@@ -21,7 +21,7 @@ const Pathname = ({ children }: { children: React.ReactNode }) => {
 
     if (isAuthRoute) {
         return (
-            <main>
+            <Fragment>
                 <Toaster
                     position="top-center"
                     richColors
@@ -36,24 +36,24 @@ const Pathname = ({ children }: { children: React.ReactNode }) => {
                         className: 'font-medium',
                     }}
                 />
-                {children}
+                <div className="flex flex-1 flex-col">{children}</div>
                 <Footer />
-            </main>
+            </Fragment>
         );
     }
 
     return (
-        <div className="flex flex-col min-h-screen">
+        <Fragment>
             <SiteHeader />
-            <Fragment>
+            <div className="flex flex-1 flex-col">
                 <Toaster
                     position="top-center"
                     richColors
                 />
                 {children}
-            </Fragment>
+            </div>
             <Footer />
-        </div>
+        </Fragment>
     );
 };
 
