@@ -16,43 +16,14 @@ const Pathname = ({ children }: { children: React.ReactNode }) => {
     const isAuthRoute =
         pathname?.includes("/signin") ||
         pathname?.includes("/signup") ||
-        pathname?.includes("/forgot-password") ||
-        pathname?.includes("/auth/") || false;
-
-    if (isAuthRoute) {
-        return (
-            <Fragment>
-                <Toaster
-                    position="top-center"
-                    richColors
-                    toastOptions={{
-                        duration: 3000,
-                        style: {
-                            background: 'black',
-                            color: '#fff',
-                            border: '1px solid #e5e7eb',
-                            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                        },
-                        className: 'font-medium',
-                    }}
-                />
-                <div className="flex flex-1 flex-col">{children}</div>
-                <Footer />
-            </Fragment>
-        );
-    }
+        pathname?.includes("/forgot-password") || false;
 
     return (
         <Fragment>
-            <SiteHeader />
-            <div className="flex flex-1 flex-col">
-                <Toaster
-                    position="top-center"
-                    richColors
-                />
-                {children}
-            </div>
-            <Footer />
+            {!isAuthRoute && <Toaster position="top-center" richColors />}
+            {!isAuthRoute && <SiteHeader />}
+            {children}
+            {!isAuthRoute && <Footer />}
         </Fragment>
     );
 };

@@ -33,7 +33,7 @@ const publicPaths = [
 const adminPaths = ["/dashboard"];
 const authPages = ["/signin", "/signup"];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
     const sessionCookie = request.cookies.get("session")?.value;
     const { pathname } = request.nextUrl;
     const method = request.method;

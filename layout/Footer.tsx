@@ -55,7 +55,7 @@ export default function Footer() {
                 }}
             />
 
-            <div className="relative mx-auto container px-4 py-12 sm:px-6 lg:px-8">
+            <div className="relative mx-auto container px-4 py-12">
                 <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-12 lg:gap-8">
                     {/* Brand block */}
                     <div className="sm:col-span-2 lg:col-span-4">

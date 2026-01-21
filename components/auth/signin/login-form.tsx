@@ -1,11 +1,15 @@
 "use client"
 
 import { useState } from "react"
+
 import Link from "next/link"
-import { GalleryVerticalEnd } from "lucide-react"
+
+import { Eye, EyeOff, GalleryVerticalEnd } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+
 import { Button } from "@/components/ui/button"
+
 import {
   Field,
   FieldDescription,
@@ -13,16 +17,19 @@ import {
   FieldLabel,
   FieldSeparator,
 } from "@/components/ui/field"
+
 import { Input } from "@/components/ui/input"
+
 import { useAuth } from "@/utils/context/AuthContext"
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
-  const { login, loginWithGoogle } = useAuth()
+  const { login, loginWithGoogle, loginWithGithub } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -47,21 +54,31 @@ export function LoginForm({
     }
   }
 
+  const handleGithub = async () => {
+    if (submitting) return
+    try {
+      setSubmitting(true)
+      await loginWithGithub()
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <form onSubmit={handleSubmit}>
         <FieldGroup>
           <div className="flex flex-col items-center gap-2 text-center">
-            <a
-              href="#"
+            <Link
+              href="/"
               className="flex flex-col items-center gap-2 font-medium"
             >
               <div className="flex size-8 items-center justify-center rounded-md">
                 <GalleryVerticalEnd className="size-6" />
               </div>
-              <span className="sr-only">Acme Inc.</span>
-            </a>
-            <h1 className="text-xl font-bold">Welcome to Acme Inc.</h1>
+              <span className="sr-only">Rizki Ai.</span>
+            </Link>
+            <h1 className="text-xl font-bold">Welcome to Rizki Ai.</h1>
             <FieldDescription>
               Don&apos;t have an account? <Link href="/signup">Sign up</Link>
             </FieldDescription>
@@ -79,14 +96,32 @@ export function LoginForm({
           </Field>
           <Field>
             <FieldLabel htmlFor="password">Password</FieldLabel>
-            <Input
-              id="password"
-              type="password"
-              placeholder="●●●●●●●●"
-              required
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="●●●●●●●●"
+                required
+                className="pr-10"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="absolute right-1 top-1/2 -translate-y-1/2"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
+                onClick={() => setShowPassword((prev) => !prev)}
+              >
+                {showPassword ? (
+                  <EyeOff className="size-4" />
+                ) : (
+                  <Eye className="size-4" />
+                )}
+              </Button>
+            </div>
           </Field>
           <Field>
             <Button type="submit" disabled={submitting}>
@@ -95,14 +130,19 @@ export function LoginForm({
           </Field>
           <FieldSeparator>Or</FieldSeparator>
           <Field className="grid gap-4 sm:grid-cols-2">
-            <Button variant="outline" type="button" disabled>
+            <Button
+              variant="outline"
+              type="button"
+              onClick={handleGithub}
+              disabled={submitting}
+            >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                 <path
-                  d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"
+                  d="M12 .5c-6.35 0-11.5 5.15-11.5 11.5 0 5.09 3.29 9.41 7.86 10.94.58.1.79-.25.79-.56 0-.28-.01-1.2-.02-2.18-3.2.7-3.88-1.23-3.88-1.23-.52-1.33-1.27-1.68-1.27-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.67 1.25 3.32.95.1-.74.4-1.25.72-1.54-2.56-.29-5.25-1.28-5.25-5.72 0-1.26.45-2.3 1.18-3.11-.12-.29-.51-1.46.11-3.04 0 0 .97-.31 3.18 1.19.92-.26 1.9-.39 2.88-.39.98 0 1.96.13 2.88.39 2.21-1.5 3.18-1.19 3.18-1.19.62 1.58.23 2.75.11 3.04.74.81 1.18 1.85 1.18 3.11 0 4.45-2.7 5.42-5.28 5.71.41.35.78 1.05.78 2.13 0 1.54-.02 2.78-.02 3.16 0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"
                   fill="currentColor"
                 />
               </svg>
-              Continue with Apple (soon)
+              Continue with GitHub
             </Button>
             <Button
               variant="outline"

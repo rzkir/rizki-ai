@@ -68,7 +68,7 @@ export default function Home() {
         "Analisis video dan berikan ringkasan kontennya"
     ];
     return (
-        <section className="relative min-h-full lg:min-h-screen py-20 sm:py-32 lg:py-40 overflow-hidden">
+        <section className="min-h-full lg:min-h-screen py-20 sm:py-32 lg:py-40 overflow-hidden">
             {/* Minimal, clean background */}
             <div className="absolute inset-0 -z-20 overflow-hidden">
                 <div className="absolute inset-0 bg-linear-to-b from-background via-background/95 to-background" />

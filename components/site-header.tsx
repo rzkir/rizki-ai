@@ -152,8 +152,8 @@ export function SiteHeader() {
   const { user, loading, logout, getDashboardUrl, hasRole } = useAuth()
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
-      <div className="flex h-16 items-center gap-4 px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 md:top-4 max-w-6xl mx-auto z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 rounded-none md:rounded-2xl">
+      <div className="flex h-16 items-center gap-4 px-4">
         <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
           <IconInnerShadowTop className="size-5 text-primary" />
           <span className="text-lg font-semibold">Rizki Ai.</span>
