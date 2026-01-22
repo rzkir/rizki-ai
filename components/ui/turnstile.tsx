@@ -90,9 +90,9 @@ export function Turnstile({ onVerify, onError, onExpire, className }: TurnstileP
   useEffect(() => {
     if (!isLoaded || !containerRef.current || !window.turnstile || hasError) return
 
-    const siteKey = process.env.CLOUDFLARE_SITE_KEY
+    const siteKey = process.env.NEXT_PUBLIC_SITE_KEY_CLOUDFLARE
     if (!siteKey) {
-      console.error("CLOUDFLARE_SITE_KEY is not set")
+      console.error("NEXT_PUBLIC_SITE_KEY_CLOUDFLARE is not set")
       onError?.()
       // Update state in next tick to avoid synchronous setState
       requestAnimationFrame(() => {
