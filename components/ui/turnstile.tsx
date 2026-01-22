@@ -116,7 +116,7 @@ export function Turnstile({ onVerify, onError, onExpire, className }: TurnstileP
     window.turnstile.ready(() => {
       const container = containerRef.current;
       if (!container) return;
-      
+
       try {
         // Render Turnstile widget with explicit rendering
         const widgetId = window.turnstile.render(container, {
