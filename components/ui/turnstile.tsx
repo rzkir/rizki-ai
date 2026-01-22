@@ -5,14 +5,24 @@ import { useEffect, useRef, useState } from "react"
 declare global {
   interface Window {
     turnstile: {
-      render: (element: HTMLElement, options: {
-        sitekey: string
-        callback?: (token: string) => void
-        "error-callback"?: () => void
-        "expired-callback"?: () => void
-      }) => string
+      render: (
+        element: HTMLElement | string,
+        options: {
+          sitekey: string
+          callback?: (token: string) => void
+          "error-callback"?: (errorCode?: string) => void
+          "expired-callback"?: () => void
+          theme?: "light" | "dark" | "auto"
+          size?: "normal" | "compact" | "flexible"
+          appearance?: "always" | "execute" | "interaction-only"
+          execution?: "render" | "execute"
+        }
+      ) => string
       reset: (widgetId: string) => void
       remove: (widgetId: string) => void
+      getResponse: (widgetId: string) => string | undefined
+      isExpired: (widgetId: string) => boolean
+      ready: (callback: () => void) => void
     }
   }
 }
@@ -54,9 +64,10 @@ export function Turnstile({ onVerify, onError, onExpire, className }: TurnstileP
 
     window.addEventListener("error", handleError, true)
 
-    // Load Turnstile script
+    // Load Turnstile script with explicit rendering mode
+    // Using ?render=explicit for programmatic control as per Cloudflare docs
     const script = document.createElement("script")
-    script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js"
+    script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
     script.async = true
     script.defer = true
 
@@ -94,39 +105,49 @@ export function Turnstile({ onVerify, onError, onExpire, className }: TurnstileP
     if (!siteKey) {
       console.error("NEXT_PUBLIC_SITE_KEY_CLOUDFLARE is not set")
       onError?.()
-      // Update state in next tick to avoid synchronous setState
       requestAnimationFrame(() => {
         setHasError(true)
       })
       return
     }
 
-    try {
-      // Render Turnstile widget
-      const widgetId = window.turnstile.render(containerRef.current, {
-        sitekey: siteKey,
-        callback: (token: string) => {
-          onVerify(token)
-        },
-        "error-callback": () => {
-          onError?.()
-          requestAnimationFrame(() => {
-            setHasError(true)
-          })
-        },
-        "expired-callback": () => {
-          onExpire?.()
-        },
-      })
+    // Use turnstile.ready() to ensure Turnstile is fully loaded before rendering
+    // This is recommended by Cloudflare documentation for explicit rendering
+    window.turnstile.ready(() => {
+      const container = containerRef.current;
+      if (!container) return;
+      
+      try {
+        // Render Turnstile widget with explicit rendering
+        const widgetId = window.turnstile.render(container, {
+          sitekey: siteKey,
+          theme: "auto", // Automatically adapts to user's theme preference
+          size: "normal", // Standard size widget
+          callback: (token: string) => {
+            onVerify(token)
+          },
+          "error-callback": (errorCode?: string) => {
+            console.error("Turnstile error:", errorCode)
+            onError?.()
+            requestAnimationFrame(() => {
+              setHasError(true)
+            })
+          },
+          "expired-callback": () => {
+            console.warn("Turnstile token expired")
+            onExpire?.()
+          },
+        })
 
-      widgetIdRef.current = widgetId
-    } catch (err) {
-      console.error("Error rendering Turnstile widget:", err)
-      onError?.()
-      requestAnimationFrame(() => {
-        setHasError(true)
-      })
-    }
+        widgetIdRef.current = widgetId
+      } catch (err) {
+        console.error("Error rendering Turnstile widget:", err)
+        onError?.()
+        requestAnimationFrame(() => {
+          setHasError(true)
+        })
+      }
+    })
 
     return () => {
       if (widgetIdRef.current && window.turnstile) {

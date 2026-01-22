@@ -16,31 +16,68 @@ export async function POST(request: Request) {
     }
 
     // Verify Turnstile token if provided
+    // Server-side validation is mandatory per Cloudflare documentation
     if (turnstileToken) {
       const secretKey = process.env.CLOUDFLARE_SECRET_KEY;
       if (secretKey) {
         try {
-          const turnstileResponse = await fetch(
-            "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                secret: secretKey,
-                response: turnstileToken,
-              }),
-            }
-          );
+          // Get client IP for better validation
+          const remoteip =
+            request.headers.get("CF-Connecting-IP") ||
+            request.headers.get("X-Forwarded-For") ||
+            request.headers.get("X-Real-IP") ||
+            null;
 
-          const turnstileData = await turnstileResponse.json();
+          // Use FormData as recommended by Cloudflare
+          const formData = new FormData();
+          formData.append("secret", secretKey);
+          formData.append("response", turnstileToken);
+          if (remoteip) {
+            formData.append("remoteip", remoteip);
+          }
 
-          if (!turnstileData.success) {
-            return NextResponse.json(
-              { error: "Turnstile verification failed" },
-              { status: 400 }
+          // Set timeout to prevent hanging requests
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+          try {
+            const turnstileResponse = await fetch(
+              "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+              {
+                method: "POST",
+                body: formData,
+                signal: controller.signal,
+              }
             );
+
+            if (!turnstileResponse.ok) {
+              throw new Error(`Siteverify API returned ${turnstileResponse.status}`);
+            }
+
+            const turnstileData = await turnstileResponse.json();
+
+            if (!turnstileData.success) {
+              const errorCodes = turnstileData["error-codes"] || ["unknown-error"];
+              console.error("Turnstile verification failed:", errorCodes);
+              return NextResponse.json(
+                {
+                  error: "Turnstile verification failed",
+                  "error-codes": errorCodes
+                },
+                { status: 400 }
+              );
+            }
+
+            clearTimeout(timeoutId);
+          } catch (fetchError) {
+            clearTimeout(timeoutId);
+            if (fetchError instanceof Error && fetchError.name === "AbortError") {
+              return NextResponse.json(
+                { error: "Turnstile validation timeout" },
+                { status: 500 }
+              );
+            }
+            throw fetchError;
           }
         } catch (turnstileError) {
           console.error("Error verifying Turnstile:", turnstileError);
