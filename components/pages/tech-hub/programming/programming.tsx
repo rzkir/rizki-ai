@@ -12,7 +12,7 @@ import { AsideLayout, AsideInset, AsideMain, AsideSectionDivider } from '@/compo
 
 import { InputArea } from '@/components/ui/input-area/InputArea';
 
-import { useStateProgramming } from './lib/useStateProgramming';
+import { useStateProgramming } from '@/components/pages/tech-hub/programming/lib/useStateProgramming';
 
 export default function Chat() {
     const {
@@ -26,9 +26,11 @@ export default function Chat() {
         messagesContainerRef,
         textareaRef,
         handleSubmit,
+        handleHistoryClick,
         suggestedPrompts,
         isListening,
         isSpeechSupported,
+        historyItems,
         toggleVoiceRecognition,
     } = useStateProgramming();
 
@@ -45,7 +47,26 @@ export default function Chat() {
                 mobileIcon={Compass}
             >
                 <div className="space-y-4">
-                    <AsideSectionDivider>Tidak ada riwayat</AsideSectionDivider>
+                    <AsideSectionDivider>Riwayat</AsideSectionDivider>
+                    {historyItems.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">Belum ada riwayat percakapan.</p>
+                    ) : (
+                        <div className="space-y-2">
+                            {[...historyItems].reverse().map((item, idx) => (
+                                <div
+                                    key={idx}
+                                    className="rounded-2xl border border-sidebar-border/50 bg-sidebar-accent/50 px-4 py-3 text-sm text-sidebar-foreground line-clamp-2 cursor-pointer hover:bg-sidebar-accent transition-colors"
+                                    title={item.content}
+                                    onClick={() => handleHistoryClick(item.content)}
+                                >
+                                    {item.content}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    <AsideSectionDivider>Profile</AsideSectionDivider>
+
                 </div>
             </Sidebar>
 

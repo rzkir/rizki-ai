@@ -31,6 +31,7 @@ export default function Chat() {
         messagesContainerRef,
         textareaRef,
         handleSubmit,
+        handleHistoryClick,
         toggleVoiceRecognition,
     } = useStateScience();
 
@@ -59,11 +60,12 @@ export default function Chat() {
                         <p className="text-xs text-muted-foreground">Belum ada riwayat percakapan.</p>
                     ) : (
                         <div className="space-y-2">
-                            {historyItems.map((item, idx) => (
+                            {[...historyItems].reverse().map((item, idx) => (
                                 <div
                                     key={idx}
-                                    className="rounded-2xl border border-sidebar-border/50 bg-sidebar-accent/50 px-4 py-3 text-sm text-sidebar-foreground line-clamp-2"
+                                    className="rounded-2xl border border-sidebar-border/50 bg-sidebar-accent/50 px-4 py-3 text-sm text-sidebar-foreground line-clamp-2 cursor-pointer hover:bg-sidebar-accent transition-colors"
                                     title={item.content}
+                                    onClick={() => handleHistoryClick(item.content)}
                                 >
                                     {item.content}
                                 </div>

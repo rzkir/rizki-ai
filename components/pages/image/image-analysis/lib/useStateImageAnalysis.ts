@@ -12,6 +12,8 @@ import { Sparkles, ImageIcon, Scan } from 'lucide-react';
 
 type ChatMessage = Message & { imageUrl?: string };
 
+const STORAGE_KEY = 'image_analysis_history';
+
 export function useStateImageAnalysis() {
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
@@ -21,16 +23,63 @@ export function useStateImageAnalysis() {
     const [sheetOpen, setSheetOpen] = useState(false);
     const [isListening, setIsListening] = useState(false);
     const [isSpeechSupported, setIsSpeechSupported] = useState(false);
+    const [historyItems, setHistoryItems] = useState<Message[]>([]);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const recognitionRef = useRef<SpeechRecognition | null>(null);
     const voiceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const lastProcessedIndexRef = useRef<number>(-1);
+    const savedMessagesCountRef = useRef<number>(0);
 
     const { textareaRef, resetHeight } = useTextareaRef({
         input: prompt,
         maxHeight: 160,
     });
+
+    // Load history from localStorage on mount
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY);
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (Array.isArray(parsed)) {
+                        setHistoryItems(parsed);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading image analysis history from localStorage:', error);
+            }
+        }
+    }, []);
+
+    // Save new user messages to history (avoid duplicates)
+    useEffect(() => {
+        if (typeof window !== 'undefined' && messages.length > savedMessagesCountRef.current) {
+            const userMessages = messages.filter(message => message.role === 'user');
+            const newUserMessages = userMessages.slice(savedMessagesCountRef.current);
+
+            if (newUserMessages.length > 0) {
+                setHistoryItems(prev => {
+                    // Filter out duplicates before adding new messages
+                    const existingContents = new Set(prev.map(item => item.content));
+                    const uniqueNewMessages = newUserMessages.filter(
+                        msg => !existingContents.has(msg.content)
+                    );
+
+                    // Add new messages and limit to last 50 items
+                    const updated = [...prev, ...uniqueNewMessages].slice(-50);
+                    try {
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+                    } catch (error) {
+                        console.error('Error saving image analysis history to localStorage:', error);
+                    }
+                    return updated;
+                });
+                savedMessagesCountRef.current = userMessages.length;
+            }
+        }
+    }, [messages]);
 
     const suggestedPrompts = [
         { icon: Sparkles, text: "Identify Objects", prompt: "What objects are in this image?" },
@@ -266,6 +315,14 @@ export function useStateImageAnalysis() {
         }
     }, [resetHeight]);
 
+    // Handle history item click - set prompt (user needs to select image if needed)
+    const handleHistoryClick = useCallback((historyText: string) => {
+        if (!historyText.trim()) return;
+        setSheetOpen(false);
+        setPrompt(historyText);
+        setTimeout(() => textareaRef.current?.focus(), 150);
+    }, [textareaRef]);
+
     return {
         // state
         selectedImage,
@@ -278,6 +335,7 @@ export function useStateImageAnalysis() {
         setSheetOpen,
         isListening,
         isSpeechSupported,
+        historyItems,
         suggestedPrompts,
         // refs
         fileInputRef,
@@ -286,6 +344,7 @@ export function useStateImageAnalysis() {
         handleImageSelect,
         handleAnalyze,
         handleReset,
+        handleHistoryClick,
         toggleVoiceRecognition,
     };
 }

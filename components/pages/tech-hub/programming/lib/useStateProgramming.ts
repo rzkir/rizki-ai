@@ -1,61 +1,16 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+
 import { streamChat } from '@/lib/api-client';
+
 import { API_ENDPOINTS } from '@/lib/config';
+
 import { Code2, Lightbulb, Zap, Cpu } from 'lucide-react';
+
 import { useTextareaRef } from '@/hooks/text-areaRef';
 
-export interface Message {
-    role: 'user' | 'assistant';
-    content: string;
-}
-
-// Extend Window interface for SpeechRecognition
-interface SpeechRecognition extends EventTarget {
-    continuous: boolean;
-    interimResults: boolean;
-    lang: string;
-    start(): void;
-    stop(): void;
-    abort(): void;
-    onstart: ((this: SpeechRecognition, ev: Event) => void) | null;
-    onresult: ((this: SpeechRecognition, ev: SpeechRecognitionEvent) => void) | null;
-    onerror: ((this: SpeechRecognition, ev: SpeechRecognitionErrorEvent) => void) | null;
-    onend: ((this: SpeechRecognition, ev: Event) => void) | null;
-}
-
-interface SpeechRecognitionEvent extends Event {
-    results: SpeechRecognitionResultList;
-    resultIndex: number;
-}
-
-interface SpeechRecognitionErrorEvent extends Event {
-    error: string;
-    message: string;
-}
-
-interface SpeechRecognitionResultList {
-    length: number;
-    item(index: number): SpeechRecognitionResult;
-    [index: number]: SpeechRecognitionResult;
-}
-
-interface SpeechRecognitionResult {
-    length: number;
-    item(index: number): SpeechRecognitionAlternative;
-    [index: number]: SpeechRecognitionAlternative;
-    isFinal: boolean;
-}
-
-interface SpeechRecognitionAlternative {
-    transcript: string;
-    confidence: number;
-}
-
-interface SpeechRecognitionConstructor {
-    new(): SpeechRecognition;
-}
+const STORAGE_KEY = 'programming_history';
 
 declare global {
     interface Window {
@@ -71,9 +26,10 @@ export function useStateProgramming() {
     const [sheetOpen, setSheetOpen] = useState(false);
     const [isListening, setIsListening] = useState(false);
     const [isSpeechSupported, setIsSpeechSupported] = useState(false);
+    const [historyItems, setHistoryItems] = useState<Message[]>([]);
 
     // Textarea ref dengan auto-resize
-    const { textareaRef } = useTextareaRef({ input, maxHeight: 200 });
+    const { textareaRef, resetHeight } = useTextareaRef({ input, maxHeight: 200 });
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -84,6 +40,52 @@ export function useStateProgramming() {
     const autoScrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const voiceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const lastProcessedIndexRef = useRef<number>(-1);
+    const savedMessagesCountRef = useRef<number>(0);
+
+    // Load history from localStorage on mount
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY);
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (Array.isArray(parsed)) {
+                        setHistoryItems(parsed);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading programming history from localStorage:', error);
+            }
+        }
+    }, []);
+
+    // Save new user messages to history (avoid duplicates)
+    useEffect(() => {
+        if (typeof window !== 'undefined' && messages.length > savedMessagesCountRef.current) {
+            const userMessages = messages.filter(message => message.role === 'user');
+            const newUserMessages = userMessages.slice(savedMessagesCountRef.current);
+
+            if (newUserMessages.length > 0) {
+                setHistoryItems(prev => {
+                    // Filter out duplicates before adding new messages
+                    const existingContents = new Set(prev.map(item => item.content));
+                    const uniqueNewMessages = newUserMessages.filter(
+                        msg => !existingContents.has(msg.content)
+                    );
+
+                    // Add new messages and limit to last 50 items
+                    const updated = [...prev, ...uniqueNewMessages].slice(-50);
+                    try {
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+                    } catch (error) {
+                        console.error('Error saving programming history to localStorage:', error);
+                    }
+                    return updated;
+                });
+                savedMessagesCountRef.current = userMessages.length;
+            }
+        }
+    }, [messages]);
 
     // Initialize Speech Recognition
     useEffect(() => {
@@ -383,6 +385,67 @@ export function useStateProgramming() {
         }
     };
 
+    // Handle history item click - directly submit without creating duplicate
+    const handleHistoryClick = useCallback(async (historyText: string) => {
+        if (!historyText.trim() || isLoading) return;
+
+        setSheetOpen(false);
+
+        const inputText = historyText.trim();
+        setInput('');
+        resetHeight();
+
+        const userMessage: Message = { role: 'user', content: inputText };
+        const newMessages = [...messages, userMessage];
+        setMessages(newMessages);
+
+        // Reset manual scroll flag when user sends a new message
+        isUserScrollingRef.current = false;
+        clearAllTimeouts();
+
+        // Force scroll to bottom immediately when user sends a message
+        setTimeout(() => performScroll(), 50);
+
+        setIsLoading(true);
+
+        const assistantMessageIndex = newMessages.length;
+        setMessages([...newMessages, { role: 'assistant', content: '' }]);
+
+        const handleError = () => {
+            setMessages(prev => {
+                const updated = [...prev];
+                updated[assistantMessageIndex] = {
+                    role: 'assistant',
+                    content: 'Maaf, terjadi kesalahan. Silakan coba lagi.',
+                };
+                return updated;
+            });
+        };
+
+        try {
+            await streamChat({
+                endpoint: API_ENDPOINTS.programming,
+                messages: newMessages,
+                onChunk: (content) => {
+                    setMessages(prev => {
+                        const updated = [...prev];
+                        updated[assistantMessageIndex] = {
+                            role: 'assistant',
+                            content: content,
+                        };
+                        return updated;
+                    });
+                },
+                onError: handleError
+            });
+        } catch (error) {
+            console.error('Error:', error);
+            handleError();
+        } finally {
+            setIsLoading(false);
+        }
+    }, [messages, isLoading, setInput, resetHeight, performScroll, clearAllTimeouts]);
+
     return {
         // state
         messages,
@@ -394,12 +457,14 @@ export function useStateProgramming() {
         setSheetOpen,
         isListening,
         isSpeechSupported,
+        historyItems,
         // refs
         messagesEndRef,
         messagesContainerRef,
         textareaRef,
         // handlers
         handleSubmit,
+        handleHistoryClick,
         toggleVoiceRecognition,
     };
 }

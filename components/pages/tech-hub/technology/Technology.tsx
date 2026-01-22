@@ -28,7 +28,9 @@ export default function Chat() {
         messagesContainerRef,
         textareaRef,
         handleSubmit,
+        handleHistoryClick,
         toggleVoiceRecognition,
+        historyItems,
         suggestedPrompts,
     } = useStateTechnology();
 
@@ -38,7 +40,7 @@ export default function Chat() {
                 header={{
                     icon: Cpu,
                     title: 'History Technology',
-                    subtitle: `0 percakapan`,
+                    subtitle: `${historyItems.length} percakapan`,
                     badge: <Clock className="w-3 h-3" />,
                 }}
                 open={sheetOpen}
@@ -46,6 +48,23 @@ export default function Chat() {
                 mobileIcon={Compass}
             >
                 <div className="space-y-4">
+                    <AsideSectionDivider>Riwayat</AsideSectionDivider>
+                    {historyItems.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">Belum ada riwayat percakapan.</p>
+                    ) : (
+                        <div className="space-y-2">
+                            {[...historyItems].reverse().map((item, idx) => (
+                                <div
+                                    key={idx}
+                                    className="rounded-2xl border border-sidebar-border/50 bg-sidebar-accent/50 px-4 py-3 text-sm text-sidebar-foreground line-clamp-2 cursor-pointer hover:bg-sidebar-accent transition-colors"
+                                    title={item.content}
+                                    onClick={() => handleHistoryClick(item.content)}
+                                >
+                                    {item.content}
+                                </div>
+                            ))}
+                        </div>
+                    )}
                     <AsideSectionDivider>Suggested</AsideSectionDivider>
                 </div>
             </Sidebar>

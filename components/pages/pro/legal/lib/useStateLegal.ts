@@ -8,6 +8,8 @@ import { API_ENDPOINTS } from '@/lib/config';
 
 import { useTextareaRef } from '@/hooks/text-areaRef';
 
+const STORAGE_KEY = 'legal_history';
+
 export function useStateLegal() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
@@ -15,6 +17,7 @@ export function useStateLegal() {
     const [sheetOpen, setSheetOpen] = useState(false);
     const [isListening, setIsListening] = useState(false);
     const [isSpeechSupported, setIsSpeechSupported] = useState(false);
+    const [historyItems, setHistoryItems] = useState<Message[]>([]);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -25,7 +28,53 @@ export function useStateLegal() {
     const recognitionRef = useRef<SpeechRecognition | null>(null);
     const voiceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const lastProcessedIndexRef = useRef<number>(-1);
+    const savedMessagesCountRef = useRef<number>(0);
     const { textareaRef, resetHeight } = useTextareaRef({ input });
+
+    // Load history from localStorage on mount
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY);
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (Array.isArray(parsed)) {
+                        setHistoryItems(parsed);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading legal history from localStorage:', error);
+            }
+        }
+    }, []);
+
+    // Save new user messages to history (avoid duplicates)
+    useEffect(() => {
+        if (typeof window !== 'undefined' && messages.length > savedMessagesCountRef.current) {
+            const userMessages = messages.filter(message => message.role === 'user');
+            const newUserMessages = userMessages.slice(savedMessagesCountRef.current);
+
+            if (newUserMessages.length > 0) {
+                setHistoryItems(prev => {
+                    // Filter out duplicates before adding new messages
+                    const existingContents = new Set(prev.map(item => item.content));
+                    const uniqueNewMessages = newUserMessages.filter(
+                        msg => !existingContents.has(msg.content)
+                    );
+
+                    // Add new messages and limit to last 50 items
+                    const updated = [...prev, ...uniqueNewMessages].slice(-50);
+                    try {
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+                    } catch (error) {
+                        console.error('Error saving legal history to localStorage:', error);
+                    }
+                    return updated;
+                });
+                savedMessagesCountRef.current = userMessages.length;
+            }
+        }
+    }, [messages]);
 
     // Helper function to check if user is near bottom of scroll container
     const isNearBottom = useCallback(
@@ -297,8 +346,68 @@ export function useStateLegal() {
         }
     };
 
+    // Handle history item click - directly submit without creating duplicate
+    const handleHistoryClick = useCallback(async (historyText: string) => {
+        if (!historyText.trim() || isLoading) return;
+
+        setSheetOpen(false);
+
+        const inputText = historyText.trim();
+        setInput('');
+        resetHeight();
+
+        const userMessage: Message = { role: 'user', content: inputText };
+        const newMessages = [...messages, userMessage];
+        setMessages(newMessages);
+
+        // Reset manual scroll flag when user sends a new message
+        isUserScrollingRef.current = false;
+        clearAllTimeouts();
+
+        // Force scroll to bottom immediately when user sends a message
+        setTimeout(() => performScroll(), 50);
+
+        setIsLoading(true);
+
+        const assistantMessageIndex = newMessages.length;
+        setMessages([...newMessages, { role: 'assistant', content: '' }]);
+
+        const handleError = () => {
+            setMessages(prev => {
+                const updated = [...prev];
+                updated[assistantMessageIndex] = {
+                    role: 'assistant',
+                    content: 'Maaf, terjadi kesalahan. Silakan coba lagi.',
+                };
+                return updated;
+            });
+        };
+
+        try {
+            await streamChat({
+                endpoint: API_ENDPOINTS.legal,
+                messages: newMessages,
+                onChunk: (content) => {
+                    setMessages(prev => {
+                        const updated = [...prev];
+                        updated[assistantMessageIndex] = {
+                            role: 'assistant',
+                            content: content,
+                        };
+                        return updated;
+                    });
+                },
+                onError: handleError
+            });
+        } catch (error) {
+            console.error('Error:', error);
+            handleError();
+        } finally {
+            setIsLoading(false);
+        }
+    }, [messages, isLoading, setInput, resetHeight, performScroll, clearAllTimeouts]);
+
     const hasMessages = messages.length > 0;
-    const historyItems = messages.filter((msg) => msg.role === 'user').slice(-12).reverse();
 
     return {
         // state
@@ -318,6 +427,7 @@ export function useStateLegal() {
         textareaRef,
         // handlers
         handleSubmit,
+        handleHistoryClick,
         toggleVoiceRecognition,
     };
 }

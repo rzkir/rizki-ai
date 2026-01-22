@@ -10,6 +10,8 @@ import { useTextareaRef } from '@/hooks/text-areaRef';
 
 type ChatMessage = Message & { videoUrl?: string };
 
+const STORAGE_KEY = 'video_analysis_history';
+
 export function useStateVideoAnalysis() {
     const [prompt, setPrompt] = useState('');
     const [video, setVideo] = useState<{ file: File; preview: string } | null>(null);
@@ -18,14 +20,59 @@ export function useStateVideoAnalysis() {
     const [sheetOpen, setSheetOpen] = useState(false);
     const [isListening, setIsListening] = useState(false);
     const [isSpeechSupported, setIsSpeechSupported] = useState(false);
+    const [historyItems, setHistoryItems] = useState<Message[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const recognitionRef = useRef<SpeechRecognition | null>(null);
     const voiceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const lastProcessedIndexRef = useRef<number>(-1);
+    const savedMessagesCountRef = useRef<number>(0);
     const { textareaRef, resetHeight } = useTextareaRef({ input: prompt });
 
-    const historyItems = messages.filter(message => message.role === 'user');
+    // Load history from localStorage on mount
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY);
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (Array.isArray(parsed)) {
+                        setHistoryItems(parsed);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading video analysis history from localStorage:', error);
+            }
+        }
+    }, []);
+
+    // Save new user messages to history (avoid duplicates)
+    useEffect(() => {
+        if (typeof window !== 'undefined' && messages.length > savedMessagesCountRef.current) {
+            const userMessages = messages.filter(message => message.role === 'user');
+            const newUserMessages = userMessages.slice(savedMessagesCountRef.current);
+
+            if (newUserMessages.length > 0) {
+                setHistoryItems(prev => {
+                    // Filter out duplicates before adding new messages
+                    const existingContents = new Set(prev.map(item => item.content));
+                    const uniqueNewMessages = newUserMessages.filter(
+                        msg => !existingContents.has(msg.content)
+                    );
+
+                    // Add new messages and limit to last 50 items
+                    const updated = [...prev, ...uniqueNewMessages].slice(-50);
+                    try {
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+                    } catch (error) {
+                        console.error('Error saving video analysis history to localStorage:', error);
+                    }
+                    return updated;
+                });
+                savedMessagesCountRef.current = userMessages.length;
+            }
+        }
+    }, [messages]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -353,6 +400,14 @@ export function useStateVideoAnalysis() {
         }
     };
 
+    // Handle history item click - set prompt (user needs to select video if needed)
+    const handleHistoryClick = useCallback((historyText: string) => {
+        if (!historyText.trim()) return;
+        setSheetOpen(false);
+        setPrompt(historyText);
+        setTimeout(() => textareaRef.current?.focus(), 150);
+    }, [textareaRef]);
+
     return {
         // state
         prompt,
@@ -375,6 +430,7 @@ export function useStateVideoAnalysis() {
         setVideoFile,
         handleRemoveVideo,
         handleAnalyzeVideo,
+        handleHistoryClick,
         toggleVoiceRecognition,
     };
 }

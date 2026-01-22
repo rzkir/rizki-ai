@@ -25,6 +25,7 @@ export default function Chat() {
         messagesContainerRef,
         textareaRef,
         handleSubmit,
+        handleHistoryClick,
         toggleVoiceRecognition,
     } = useStateMarketing();
 
@@ -55,10 +56,10 @@ export default function Chat() {
                         </div>
                     ) : (
                         <div className="space-y-3">
-                            {historyItems.map((item, idx) => (
+                            {[...historyItems].reverse().map((item, idx) => (
                                 <button
                                     key={`${idx}-${item.content.slice(0, 12)}`}
-                                    onClick={() => setInput(item.content)}
+                                    onClick={() => handleHistoryClick(item.content)}
                                     className="w-full text-left rounded-xl border border-sidebar-border/50 bg-sidebar/40 hover:border-primary/40 hover:bg-primary/5 p-3 transition-colors"
                                 >
                                     <p className="text-xs text-muted-foreground mb-1">Prompt</p>
