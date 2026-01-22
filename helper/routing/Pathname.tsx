@@ -13,7 +13,8 @@ import { Toaster } from "sonner";
 const Pathname = ({ children }: { children: React.ReactNode }) => {
     const pathname = usePathname();
 
-    const isAuthRoute = pathname?.includes("/auth") ||
+    const isAuthRoute = pathname?.includes("/signin") ||
+        pathname?.includes("/signup") ||
         pathname?.includes("/programming") ||
         pathname?.includes("/technology") ||
         pathname?.includes("/curhat") ||
