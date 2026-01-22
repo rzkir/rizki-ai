@@ -13,6 +13,14 @@ import { Sparkles, ImageIcon, Scan } from 'lucide-react';
 type ChatMessage = Message & { imageUrl?: string };
 
 const STORAGE_KEY = 'image_analysis_history';
+const CONVERSATIONS_KEY = 'image_analysis_conversations';
+
+interface Conversation {
+    id: string;
+    title: string;
+    messages: ChatMessage[];
+    createdAt: number;
+}
 
 export function useStateImageAnalysis() {
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -23,7 +31,24 @@ export function useStateImageAnalysis() {
     const [sheetOpen, setSheetOpen] = useState(false);
     const [isListening, setIsListening] = useState(false);
     const [isSpeechSupported, setIsSpeechSupported] = useState(false);
-    const [historyItems, setHistoryItems] = useState<Message[]>([]);
+    // Load history from localStorage using lazy initializer
+    const [historyItems, setHistoryItems] = useState<Message[]>(() => {
+        if (typeof window !== 'undefined') {
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY);
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (Array.isArray(parsed)) {
+                        return parsed;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading image analysis history from localStorage:', error);
+            }
+        }
+        return [];
+    });
+    const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -36,26 +61,31 @@ export function useStateImageAnalysis() {
         maxHeight: 160,
     });
 
-    // Load history from localStorage on mount
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            try {
-                const stored = localStorage.getItem(STORAGE_KEY);
-                if (stored) {
-                    const parsed = JSON.parse(stored);
-                    if (Array.isArray(parsed)) {
-                        setHistoryItems(parsed);
-                    }
-                }
-            } catch (error) {
-                console.error('Error loading image analysis history from localStorage:', error);
+    // Save conversation to localStorage
+    const saveConversation = useCallback((conversation: Conversation) => {
+        if (typeof window === 'undefined') return;
+        try {
+            const stored = localStorage.getItem(CONVERSATIONS_KEY);
+            const conversations: Conversation[] = stored ? JSON.parse(stored) : [];
+            const existingIndex = conversations.findIndex(c => c.id === conversation.id);
+
+            if (existingIndex >= 0) {
+                conversations[existingIndex] = conversation;
+            } else {
+                conversations.push(conversation);
             }
+
+            // Keep only last 50 conversations
+            const updated = conversations.slice(-50);
+            localStorage.setItem(CONVERSATIONS_KEY, JSON.stringify(updated));
+        } catch (error) {
+            console.error('Error saving conversation to localStorage:', error);
         }
     }, []);
 
     // Save new user messages to history (avoid duplicates)
     useEffect(() => {
-        if (typeof window !== 'undefined' && messages.length > savedMessagesCountRef.current) {
+        if (typeof window !== 'undefined' && messages.length > savedMessagesCountRef.current && currentConversationId) {
             const userMessages = messages.filter(message => message.role === 'user');
             const newUserMessages = userMessages.slice(savedMessagesCountRef.current);
 
@@ -79,7 +109,25 @@ export function useStateImageAnalysis() {
                 savedMessagesCountRef.current = userMessages.length;
             }
         }
-    }, [messages]);
+    }, [messages, currentConversationId]);
+
+    // Reset conversation ID when messages are cleared (handled in handleReset and handleImageSelect)
+
+    // Save conversation when messages change
+    useEffect(() => {
+        if (messages.length > 0 && currentConversationId) {
+            const firstUserMessage = messages.find(m => m.role === 'user');
+            if (!firstUserMessage) return;
+
+            const conversation: Conversation = {
+                id: currentConversationId,
+                title: firstUserMessage.content,
+                messages: [...messages],
+                createdAt: Date.now()
+            };
+            saveConversation(conversation);
+        }
+    }, [messages, currentConversationId, saveConversation]);
 
     const suggestedPrompts = [
         { icon: Sparkles, text: "Identify Objects", prompt: "What objects are in this image?" },
@@ -236,6 +284,11 @@ export function useStateImageAnalysis() {
     const handleAnalyze = useCallback(async () => {
         if (!selectedImage || !selectedImageFile) return;
 
+        // Create new conversation ID if starting a new conversation
+        if (messages.length === 0) {
+            setCurrentConversationId(`conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+        }
+
         setIsLoading(true);
 
         const handleError = () => {
@@ -315,10 +368,54 @@ export function useStateImageAnalysis() {
         }
     }, [resetHeight]);
 
-    // Handle history item click - set prompt (user needs to select image if needed)
+    // Handle history item click - load previous conversation
     const handleHistoryClick = useCallback((historyText: string) => {
         if (!historyText.trim()) return;
+
         setSheetOpen(false);
+
+        // Find conversation that starts with this history text
+        if (typeof window !== 'undefined') {
+            try {
+                const stored = localStorage.getItem(CONVERSATIONS_KEY);
+                if (stored) {
+                    const conversations: Conversation[] = JSON.parse(stored);
+                    // Find conversation by title (first user message) or by matching first user message
+                    const conversation = conversations.find(
+                        c => {
+                            const firstUserMsg = c.messages.find(m => m.role === 'user');
+                            return c.title === historyText.trim() ||
+                                (firstUserMsg && firstUserMsg.content === historyText.trim());
+                        }
+                    );
+
+                    if (conversation && conversation.messages.length > 0) {
+                        // Load the full conversation
+                        setMessages(conversation.messages);
+                        setCurrentConversationId(conversation.id);
+
+                        // Update savedMessagesCountRef to prevent duplicate saving
+                        const userMessages = conversation.messages.filter(m => m.role === 'user');
+                        savedMessagesCountRef.current = userMessages.length;
+
+                        // Try to restore image if available in first message
+                        const firstMessage = conversation.messages[0];
+                        if (firstMessage && 'imageUrl' in firstMessage && firstMessage.imageUrl) {
+                            setSelectedImage(firstMessage.imageUrl);
+                        }
+
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading conversation:', error);
+            }
+        }
+
+        // Fallback: if conversation not found, set prompt
+        setMessages([]);
+        setCurrentConversationId(null);
+        savedMessagesCountRef.current = 0;
         setPrompt(historyText);
         setTimeout(() => textareaRef.current?.focus(), 150);
     }, [textareaRef]);

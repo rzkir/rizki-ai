@@ -65,7 +65,6 @@ export default function Chat() {
                             ))}
                         </div>
                     )}
-                    <AsideSectionDivider>Suggested</AsideSectionDivider>
                 </div>
             </Sidebar>
 

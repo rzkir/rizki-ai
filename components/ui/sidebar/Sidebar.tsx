@@ -1,35 +1,14 @@
 'use client';
 
 import * as React from 'react';
-import { LucideIcon } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
+
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+
 import { cn } from '@/lib/utils';
 
-/* ---------------------------------- Types --------------------------------- */
-export interface SidebarHeaderProps {
-    icon: LucideIcon;
-    title: string;
-    subtitle?: string;
-    badge?: React.ReactNode;
-}
-
-export interface SidebarProps {
-    /** Header configuration */
-    header: SidebarHeaderProps;
-    /** Content to render inside the sidebar */
-    children: React.ReactNode;
-    /** Mobile sheet open state */
-    open?: boolean;
-    /** Callback when mobile sheet open state changes */
-    onOpenChange?: (open: boolean) => void;
-    /** Additional className for the sidebar container */
-    className?: string;
-    /** Mobile trigger icon */
-    mobileIcon?: LucideIcon;
-    /** Badge count for mobile trigger */
-    mobileBadge?: number;
-}
+import { useAuth } from '@/utils/context/AuthContext';
 
 /* -------------------------------- Components ------------------------------ */
 
@@ -60,13 +39,73 @@ function SidebarHeader({ icon: Icon, title, subtitle, badge }: SidebarHeaderProp
     );
 }
 
+/** Section divider component */
+function SectionDivider({ children }: { children: React.ReactNode }) {
+    return (
+        <div className="flex items-center gap-2">
+            <div className="h-px flex-1 bg-linear-to-r from-transparent via-sidebar-border to-transparent" />
+            <span className="text-xs font-semibold text-sidebar-foreground px-4">{children}</span>
+            <div className="h-px flex-1 bg-linear-to-r from-transparent via-sidebar-border to-transparent" />
+        </div>
+    );
+}
+
+/** Profile component */
+function SidebarProfile() {
+    const { user } = useAuth();
+
+    if (!user) {
+        return (
+            <div className="space-y-4 mt-auto">
+                <SectionDivider>Profile</SectionDivider>
+                <p className="text-xs text-muted-foreground">Belum login.</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-4 mt-auto">
+            <SectionDivider>Profile</SectionDivider>
+            <div className="rounded-2xl border border-sidebar-border/50 bg-sidebar-accent/50 p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                    {user.photoURL ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                            src={user.photoURL}
+                            alt={user.displayName || "User"}
+                            className="w-12 h-12 rounded-full object-cover border-2 border-sidebar-border/50"
+                        />
+                    ) : (
+                        <div className="w-12 h-12 rounded-full bg-primary/20 text-primary flex items-center justify-center text-sm font-medium border-2 border-sidebar-border/50">
+                            {user.displayName?.slice(0, 2).toUpperCase() || "U"}
+                        </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-sidebar-foreground truncate">
+                            {user.displayName}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                            {user.email}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 /** Scrollable content wrapper with fade edges */
 function SidebarContent({ children, className }: { children: React.ReactNode; className?: string }) {
     return (
-        <div className={cn('flex-1 min-h-0 relative', className)}>
+        <div className={cn('flex-1 min-h-0 relative flex flex-col', className)}>
             <div className="absolute top-0 left-0 right-0 h-6 bg-linear-to-b from-sidebar to-transparent z-10 pointer-events-none" />
-            <div className="h-full overflow-y-auto scroll-smooth overscroll-contain px-4 py-6 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-primary/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-primary/40">
-                {children}
+            <div className="flex-1 flex flex-col min-h-0">
+                <div className="flex-1 overflow-y-auto scroll-smooth overscroll-contain px-4 py-6 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-primary/20 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-primary/40">
+                    {children}
+                </div>
+                <div className="px-4 pb-6 shrink-0">
+                    <SidebarProfile />
+                </div>
             </div>
             <div className="absolute bottom-0 left-0 right-0 h-6 bg-linear-to-t from-sidebar to-transparent z-10 pointer-events-none" />
         </div>

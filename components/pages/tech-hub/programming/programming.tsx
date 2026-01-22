@@ -48,25 +48,24 @@ export default function Chat() {
             >
                 <div className="space-y-4">
                     <AsideSectionDivider>Riwayat</AsideSectionDivider>
-                    {historyItems.length === 0 ? (
-                        <p className="text-xs text-muted-foreground">Belum ada riwayat percakapan.</p>
-                    ) : (
-                        <div className="space-y-2">
-                            {[...historyItems].reverse().map((item, idx) => (
-                                <div
-                                    key={idx}
-                                    className="rounded-2xl border border-sidebar-border/50 bg-sidebar-accent/50 px-4 py-3 text-sm text-sidebar-foreground line-clamp-2 cursor-pointer hover:bg-sidebar-accent transition-colors"
-                                    title={item.content}
-                                    onClick={() => handleHistoryClick(item.content)}
-                                >
-                                    {item.content}
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    <AsideSectionDivider>Profile</AsideSectionDivider>
-
+                    <div className="min-h-[200px]">
+                        {historyItems.length === 0 ? (
+                            <p className="text-xs text-muted-foreground">Belum ada riwayat percakapan.</p>
+                        ) : (
+                            <div className="space-y-2">
+                                {[...historyItems].reverse().map((item, idx) => (
+                                    <div
+                                        key={idx}
+                                        className="rounded-2xl border border-sidebar-border/50 bg-sidebar-accent/50 px-4 py-3 text-sm text-sidebar-foreground line-clamp-2 cursor-pointer hover:bg-sidebar-accent transition-colors"
+                                        title={item.content}
+                                        onClick={() => handleHistoryClick(item.content)}
+                                    >
+                                        {item.content}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </Sidebar>
 

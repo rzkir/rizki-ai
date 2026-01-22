@@ -9,6 +9,14 @@ import { API_ENDPOINTS } from '@/lib/config';
 import { useTextareaRef } from '@/hooks/text-areaRef';
 
 const STORAGE_KEY = 'legal_history';
+const CONVERSATIONS_KEY = 'legal_conversations';
+
+interface Conversation {
+    id: string;
+    title: string;
+    messages: Message[];
+    createdAt: number;
+}
 
 export function useStateLegal() {
     const [messages, setMessages] = useState<Message[]>([]);
@@ -18,6 +26,7 @@ export function useStateLegal() {
     const [isListening, setIsListening] = useState(false);
     const [isSpeechSupported, setIsSpeechSupported] = useState(false);
     const [historyItems, setHistoryItems] = useState<Message[]>([]);
+    const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -48,9 +57,31 @@ export function useStateLegal() {
         }
     }, []);
 
+    // Save conversation to localStorage
+    const saveConversation = useCallback((conversation: Conversation) => {
+        if (typeof window === 'undefined') return;
+        try {
+            const stored = localStorage.getItem(CONVERSATIONS_KEY);
+            const conversations: Conversation[] = stored ? JSON.parse(stored) : [];
+            const existingIndex = conversations.findIndex(c => c.id === conversation.id);
+
+            if (existingIndex >= 0) {
+                conversations[existingIndex] = conversation;
+            } else {
+                conversations.push(conversation);
+            }
+
+            // Keep only last 50 conversations
+            const updated = conversations.slice(-50);
+            localStorage.setItem(CONVERSATIONS_KEY, JSON.stringify(updated));
+        } catch (error) {
+            console.error('Error saving conversation to localStorage:', error);
+        }
+    }, []);
+
     // Save new user messages to history (avoid duplicates)
     useEffect(() => {
-        if (typeof window !== 'undefined' && messages.length > savedMessagesCountRef.current) {
+        if (typeof window !== 'undefined' && messages.length > savedMessagesCountRef.current && currentConversationId) {
             const userMessages = messages.filter(message => message.role === 'user');
             const newUserMessages = userMessages.slice(savedMessagesCountRef.current);
 
@@ -74,7 +105,31 @@ export function useStateLegal() {
                 savedMessagesCountRef.current = userMessages.length;
             }
         }
+    }, [messages, currentConversationId]);
+
+    // Reset conversation ID when messages are cleared
+    useEffect(() => {
+        if (messages.length === 0) {
+            setCurrentConversationId(null);
+            savedMessagesCountRef.current = 0;
+        }
     }, [messages]);
+
+    // Save conversation when messages change
+    useEffect(() => {
+        if (messages.length > 0 && currentConversationId) {
+            const firstUserMessage = messages.find(m => m.role === 'user');
+            if (!firstUserMessage) return;
+
+            const conversation: Conversation = {
+                id: currentConversationId,
+                title: firstUserMessage.content,
+                messages: [...messages],
+                createdAt: Date.now()
+            };
+            saveConversation(conversation);
+        }
+    }, [messages, currentConversationId, saveConversation]);
 
     // Helper function to check if user is near bottom of scroll container
     const isNearBottom = useCallback(
@@ -292,6 +347,12 @@ export function useStateLegal() {
         if (!input.trim() || isLoading) return;
 
         const inputText = input.trim();
+
+        // Create new conversation ID if starting a new conversation
+        if (messages.length === 0) {
+            setCurrentConversationId(`conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+        }
+
         setInput('');
         resetHeight();
 
@@ -346,66 +407,56 @@ export function useStateLegal() {
         }
     };
 
-    // Handle history item click - directly submit without creating duplicate
-    const handleHistoryClick = useCallback(async (historyText: string) => {
+    // Handle history item click - load previous conversation
+    const handleHistoryClick = useCallback((historyText: string) => {
         if (!historyText.trim() || isLoading) return;
 
         setSheetOpen(false);
-
-        const inputText = historyText.trim();
         setInput('');
         resetHeight();
 
-        const userMessage: Message = { role: 'user', content: inputText };
-        const newMessages = [...messages, userMessage];
-        setMessages(newMessages);
+        // Find conversation that starts with this history text
+        if (typeof window !== 'undefined') {
+            try {
+                const stored = localStorage.getItem(CONVERSATIONS_KEY);
+                if (stored) {
+                    const conversations: Conversation[] = JSON.parse(stored);
+                    // Find conversation by title (first user message) or by matching first user message
+                    const conversation = conversations.find(
+                        c => {
+                            const firstUserMsg = c.messages.find(m => m.role === 'user');
+                            return c.title === historyText.trim() ||
+                                (firstUserMsg && firstUserMsg.content === historyText.trim());
+                        }
+                    );
 
-        // Reset manual scroll flag when user sends a new message
-        isUserScrollingRef.current = false;
-        clearAllTimeouts();
+                    if (conversation && conversation.messages.length > 0) {
+                        // Load the full conversation
+                        setMessages(conversation.messages);
+                        setCurrentConversationId(conversation.id);
 
-        // Force scroll to bottom immediately when user sends a message
-        setTimeout(() => performScroll(), 50);
+                        // Update savedMessagesCountRef to prevent duplicate saving
+                        const userMessages = conversation.messages.filter(m => m.role === 'user');
+                        savedMessagesCountRef.current = userMessages.length;
 
-        setIsLoading(true);
-
-        const assistantMessageIndex = newMessages.length;
-        setMessages([...newMessages, { role: 'assistant', content: '' }]);
-
-        const handleError = () => {
-            setMessages(prev => {
-                const updated = [...prev];
-                updated[assistantMessageIndex] = {
-                    role: 'assistant',
-                    content: 'Maaf, terjadi kesalahan. Silakan coba lagi.',
-                };
-                return updated;
-            });
-        };
-
-        try {
-            await streamChat({
-                endpoint: API_ENDPOINTS.legal,
-                messages: newMessages,
-                onChunk: (content) => {
-                    setMessages(prev => {
-                        const updated = [...prev];
-                        updated[assistantMessageIndex] = {
-                            role: 'assistant',
-                            content: content,
-                        };
-                        return updated;
-                    });
-                },
-                onError: handleError
-            });
-        } catch (error) {
-            console.error('Error:', error);
-            handleError();
-        } finally {
-            setIsLoading(false);
+                        // Reset scroll
+                        isUserScrollingRef.current = false;
+                        clearAllTimeouts();
+                        setTimeout(() => performScroll(), 100);
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading conversation:', error);
+            }
         }
-    }, [messages, isLoading, setInput, resetHeight, performScroll, clearAllTimeouts]);
+
+        // Fallback: if conversation not found, start new chat with this text
+        setMessages([]);
+        setCurrentConversationId(null);
+        savedMessagesCountRef.current = 0;
+        setInput(historyText.trim());
+    }, [isLoading, resetHeight, performScroll, clearAllTimeouts]);
 
     const hasMessages = messages.length > 0;
 

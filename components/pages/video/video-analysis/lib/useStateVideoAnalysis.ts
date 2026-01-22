@@ -11,6 +11,14 @@ import { useTextareaRef } from '@/hooks/text-areaRef';
 type ChatMessage = Message & { videoUrl?: string };
 
 const STORAGE_KEY = 'video_analysis_history';
+const CONVERSATIONS_KEY = 'video_analysis_conversations';
+
+interface Conversation {
+    id: string;
+    title: string;
+    messages: ChatMessage[];
+    createdAt: number;
+}
 
 export function useStateVideoAnalysis() {
     const [prompt, setPrompt] = useState('');
@@ -21,6 +29,7 @@ export function useStateVideoAnalysis() {
     const [isListening, setIsListening] = useState(false);
     const [isSpeechSupported, setIsSpeechSupported] = useState(false);
     const [historyItems, setHistoryItems] = useState<Message[]>([]);
+    const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -46,9 +55,31 @@ export function useStateVideoAnalysis() {
         }
     }, []);
 
+    // Save conversation to localStorage
+    const saveConversation = useCallback((conversation: Conversation) => {
+        if (typeof window === 'undefined') return;
+        try {
+            const stored = localStorage.getItem(CONVERSATIONS_KEY);
+            const conversations: Conversation[] = stored ? JSON.parse(stored) : [];
+            const existingIndex = conversations.findIndex(c => c.id === conversation.id);
+
+            if (existingIndex >= 0) {
+                conversations[existingIndex] = conversation;
+            } else {
+                conversations.push(conversation);
+            }
+
+            // Keep only last 50 conversations
+            const updated = conversations.slice(-50);
+            localStorage.setItem(CONVERSATIONS_KEY, JSON.stringify(updated));
+        } catch (error) {
+            console.error('Error saving conversation to localStorage:', error);
+        }
+    }, []);
+
     // Save new user messages to history (avoid duplicates)
     useEffect(() => {
-        if (typeof window !== 'undefined' && messages.length > savedMessagesCountRef.current) {
+        if (typeof window !== 'undefined' && messages.length > savedMessagesCountRef.current && currentConversationId) {
             const userMessages = messages.filter(message => message.role === 'user');
             const newUserMessages = userMessages.slice(savedMessagesCountRef.current);
 
@@ -72,7 +103,31 @@ export function useStateVideoAnalysis() {
                 savedMessagesCountRef.current = userMessages.length;
             }
         }
+    }, [messages, currentConversationId]);
+
+    // Reset conversation ID when messages are cleared
+    useEffect(() => {
+        if (messages.length === 0) {
+            setCurrentConversationId(null);
+            savedMessagesCountRef.current = 0;
+        }
     }, [messages]);
+
+    // Save conversation when messages change
+    useEffect(() => {
+        if (messages.length > 0 && currentConversationId) {
+            const firstUserMessage = messages.find(m => m.role === 'user');
+            if (!firstUserMessage) return;
+
+            const conversation: Conversation = {
+                id: currentConversationId,
+                title: firstUserMessage.content,
+                messages: [...messages],
+                createdAt: Date.now()
+            };
+            saveConversation(conversation);
+        }
+    }, [messages, currentConversationId, saveConversation]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -329,6 +384,11 @@ export function useStateVideoAnalysis() {
         e?.preventDefault();
         if ((!prompt.trim() && !video) || isAnalyzing) return;
 
+        // Create new conversation ID if starting a new conversation
+        if (messages.length === 0) {
+            setCurrentConversationId(`conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+        }
+
         setIsAnalyzing(true);
 
         const handleError = () => {
@@ -400,10 +460,55 @@ export function useStateVideoAnalysis() {
         }
     };
 
-    // Handle history item click - set prompt (user needs to select video if needed)
+    // Handle history item click - load previous conversation
     const handleHistoryClick = useCallback((historyText: string) => {
         if (!historyText.trim()) return;
+
         setSheetOpen(false);
+
+        // Find conversation that starts with this history text
+        if (typeof window !== 'undefined') {
+            try {
+                const stored = localStorage.getItem(CONVERSATIONS_KEY);
+                if (stored) {
+                    const conversations: Conversation[] = JSON.parse(stored);
+                    // Find conversation by title (first user message) or by matching first user message
+                    const conversation = conversations.find(
+                        c => {
+                            const firstUserMsg = c.messages.find(m => m.role === 'user');
+                            return c.title === historyText.trim() ||
+                                (firstUserMsg && firstUserMsg.content === historyText.trim());
+                        }
+                    );
+
+                    if (conversation && conversation.messages.length > 0) {
+                        // Load the full conversation
+                        setMessages(conversation.messages);
+                        setCurrentConversationId(conversation.id);
+
+                        // Update savedMessagesCountRef to prevent duplicate saving
+                        const userMessages = conversation.messages.filter(m => m.role === 'user');
+                        savedMessagesCountRef.current = userMessages.length;
+
+                        // Try to restore video if available in first message
+                        const firstMessage = conversation.messages[0];
+                        if (firstMessage && 'videoUrl' in firstMessage && firstMessage.videoUrl) {
+                            // Note: We can't restore File object, but we can show the preview URL if available
+                            // User would need to re-upload the video file if they want to analyze again
+                        }
+
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading conversation:', error);
+            }
+        }
+
+        // Fallback: if conversation not found, set prompt
+        setMessages([]);
+        setCurrentConversationId(null);
+        savedMessagesCountRef.current = 0;
         setPrompt(historyText);
         setTimeout(() => textareaRef.current?.focus(), 150);
     }, [textareaRef]);
