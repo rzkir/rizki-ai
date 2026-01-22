@@ -1,17 +1,18 @@
 "use client";
 
-import { ArrowUp, Upload, ImageIcon, Loader2, Sparkles } from "lucide-react";
+import { ArrowUp, Upload, ImageIcon, Loader2, Sparkles, User } from "lucide-react";
 import { MarkdownRenderer } from '@/components/markdown-renderer';
 import { Sidebar } from '@/components/ui/sidebar/Sidebar';
 import { AsideLayout, AsideInset, AsideMain, AsideSectionDivider } from '@/components/ui/aside/Aside';
 import { InputArea } from '@/components/ui/input-area/InputArea';
 import { useStateImageAnalysis } from './lib/useStateImageAnalysis';
 import Image from 'next/image';
+import { useEffect, useRef } from 'react';
 
 export default function ImageAnalysisPage() {
   const {
     selectedImage,
-    analysis,
+    messages,
     isLoading,
     prompt,
     setPrompt,
@@ -27,6 +28,12 @@ export default function ImageAnalysisPage() {
     handleReset,
     toggleVoiceRecognition,
   } = useStateImageAnalysis();
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   return (
     <AsideLayout>
@@ -47,9 +54,9 @@ export default function ImageAnalysisPage() {
 
       <AsideInset>
         <AsideMain maxWidth="6xl">
-          <div className="py-8 space-y-8">
+          <div className="py-6 space-y-8">
             {!selectedImage ? (
-              <div className="space-y-12 py-6">
+              <div className="space-y-12">
                 <div className="space-y-4 text-center">
                   <h2 className="text-5xl font-black tracking-tighter leading-none bg-linear-to-br from-white via-white to-primary/50 bg-clip-text text-transparent">
                     Upload an image <br /> to <span className="gradient-text-purple-blue italic">analyze</span>
@@ -84,7 +91,7 @@ export default function ImageAnalysisPage() {
                 </div>
 
                 {/* Upload Area */}
-                <div onClick={() => fileInputRef.current?.click()} className="group relative cursor-pointer">
+                <div onClick={() => fileInputRef.current?.click()} className="group relative cursor-pointer max-w-4xl mx-auto">
                   <div className="absolute -inset-1 bg-linear-to-r from-primary to-chart-3 rounded-[2.5rem] blur opacity-20 group-hover:opacity-40 transition duration-1000" />
                   <div className="relative bg-card/40 backdrop-blur-xl border-2 border-dashed border-border/50 rounded-[2rem] p-16 flex flex-col items-center justify-center gap-4 hover:border-primary/50 transition-all hover:bg-card/60 group">
                     <Upload className="w-16 h-16 text-primary/60 group-hover:text-primary transition-colors" />
@@ -104,56 +111,94 @@ export default function ImageAnalysisPage() {
                 />
               </div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 py-4">
-                {/* Image Preview */}
-                <div className="lg:col-span-1">
-                  <div className="sticky top-28 rounded-[2rem] overflow-hidden border border-border/50 bg-card/40 backdrop-blur-xl p-2 shadow-2xl">
-                    <div className="relative w-full aspect-square rounded-[1.5rem] overflow-hidden">
-                      <Image
-                        src={selectedImage}
-                        alt="Selected"
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                    <button
-                      onClick={handleReset}
-                      className="w-full mt-4 px-4 py-3 text-sm font-medium rounded-xl bg-destructive/20 hover:bg-destructive/30 text-destructive transition-all"
-                    >
-                      Upload Different Image
-                    </button>
-                  </div>
-                </div>
-
+              <div className="py-4">
                 {/* Analysis Panel */}
-                <div className="lg:col-span-2 space-y-6">
-                  {analysis && (
-                    <div className="rounded-[2rem] bg-card border border-border/50 backdrop-blur-md p-8 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                      <div className="flex items-start gap-3">
-                        <Sparkles className="w-6 h-6 text-chart-3 shrink-0 mt-1" />
-                        <div className="space-y-2 flex-1">
-                          <h3 className="font-bold text-foreground">Analysis Results</h3>
-                          <div className="text-foreground prose prose-sm max-w-none prose-invert">
-                            <MarkdownRenderer content={analysis} />
+                <div className="w-full">
+                  {messages.length === 0 ? (
+                    <div className="space-y-6">
+                      {!isLoading && (
+                        <div className="rounded-[2rem] bg-card/40 border-2 border-dashed border-border/50 p-8 flex items-center justify-center min-h-[300px]">
+                          <p className="text-center text-muted-foreground">
+                            Enter a prompt atau klik &quot;Analyze&quot; untuk insight gambar
+                          </p>
+                        </div>
+                      )}
+
+                      {isLoading && (
+                        <div className="rounded-[2rem] bg-card border border-border/50 backdrop-blur-md p-8 flex items-center justify-center min-h-[300px]">
+                          <div className="flex flex-col items-center gap-4">
+                            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                            <p className="text-muted-foreground">Analyzing image...</p>
                           </div>
                         </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="rounded-[2rem] border border-border/50 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden min-h-[60vh] flex flex-col">
+                      <div className="flex items-center justify-between px-4 sm:px-6 pt-4 pb-2 border-b border-border/30">
+                        <h3 className="text-sm font-semibold text-foreground">Image Analysis</h3>
+                        <button
+                          onClick={handleReset}
+                          className="px-3 py-1.5 text-xs font-medium rounded-lg bg-destructive/20 hover:bg-destructive/30 text-destructive transition-all"
+                        >
+                          Upload Different Image
+                        </button>
                       </div>
-                    </div>
-                  )}
-
-                  {!analysis && !isLoading && (
-                    <div className="rounded-[2rem] bg-card/40 border-2 border-dashed border-border/50 p-8 flex items-center justify-center min-h-[300px]">
-                      <p className="text-center text-muted-foreground">
-                        Enter a prompt atau klik &quot;Analyze&quot; untuk insight gambar
-                      </p>
-                    </div>
-                  )}
-
-                  {isLoading && (
-                    <div className="rounded-[2rem] bg-card border border-border/50 backdrop-blur-md p-8 flex items-center justify-center min-h-[300px]">
-                      <div className="flex flex-col items-center gap-4">
-                        <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                        <p className="text-muted-foreground">Analyzing image...</p>
+                      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
+                        <div className="space-y-6">
+                          {messages.map((message, index) => (
+                            <div
+                              key={index}
+                              className={`flex gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                            >
+                              {message.role === 'assistant' && (
+                                <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0 shadow-sm">
+                                  <Sparkles className="w-5 h-5 text-primary" />
+                                </div>
+                              )}
+                              <div
+                                className={`max-w-[80%] rounded-2xl px-5 py-4 shadow-sm ${message.role === 'user'
+                                  ? 'bg-card border border-border/40 text-foreground'
+                                  : 'bg-muted/30 border border-border/30 text-foreground'
+                                  }`}
+                              >
+                                {message.role === 'user' ? (
+                                  <div className="space-y-2">
+                                    {message.imageUrl && index === 0 && (
+                                      <div className="mb-2">
+                                        <Image
+                                          src={message.imageUrl}
+                                          alt="User image"
+                                          width={300}
+                                          height={300}
+                                          className="rounded-lg object-contain max-h-64 w-auto max-w-full"
+                                        />
+                                      </div>
+                                    )}
+                                    <p className="whitespace-pre-wrap wrap-break-word text-base leading-relaxed text-foreground/95">{message.content}</p>
+                                  </div>
+                                ) : (
+                                  !message.content && isLoading ? (
+                                    <div className="flex items-center gap-3">
+                                      <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                                      <p className="text-sm text-muted-foreground">Analyzing...</p>
+                                    </div>
+                                  ) : message.content ? (
+                                    <div className="text-foreground prose prose-sm max-w-none">
+                                      <MarkdownRenderer content={message.content} />
+                                    </div>
+                                  ) : null
+                                )}
+                              </div>
+                              {message.role === 'user' && (
+                                <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0 shadow-sm">
+                                  <User className="w-5 h-5 text-primary" />
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                          <div ref={messagesEndRef} />
+                        </div>
                       </div>
                     </div>
                   )}

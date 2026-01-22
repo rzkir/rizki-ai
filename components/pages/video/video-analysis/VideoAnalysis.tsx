@@ -1,239 +1,40 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-
 import { Button } from '@/components/ui/button';
-
-import { Card, CardContent } from '@/components/ui/card';
 
 import { User, MessageSquare, Upload, X, Video, Send, Film } from 'lucide-react';
 
 import { MarkdownRenderer } from '@/components/markdown-renderer';
 
-import { streamChat } from '@/lib/api-client';
-
-import { API_ENDPOINTS } from '@/lib/config';
-
-import { useTextareaRef } from '@/hooks/text-areaRef';
 import { Sidebar } from '@/components/ui/sidebar/Sidebar';
+
 import { AsideLayout, AsideInset, AsideMain, AsideSectionDivider } from '@/components/ui/aside/Aside';
+
 import { InputArea } from '@/components/ui/input-area/InputArea';
 
+import { useStateVideoAnalysis } from './lib/useStateVideoAnalysis';
+
 export default function VideoAnalysisPage() {
-    type ChatMessage = Message & { videoUrl?: string };
-
-    const [prompt, setPrompt] = useState('');
-    const [video, setVideo] = useState<{ file: File; preview: string } | null>(null);
-    const [messages, setMessages] = useState<ChatMessage[]>([]);
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [sheetOpen, setSheetOpen] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
-    const { textareaRef, resetHeight } = useTextareaRef({ input: prompt });
-
-    const historyItems = messages.filter(message => message.role === 'user');
-
-    useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
-
-    const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            // Validate file type
-            if (!file.type.match('video.*')) {
-                alert('Please select a video file');
-                return;
-            }
-
-            // Validate file size (max 50MB for video)
-            if (file.size > 50 * 1024 * 1024) {
-                alert('Please select a video smaller than 50MB');
-                return;
-            }
-
-            // Create preview
-            const reader = new FileReader();
-            reader.onload = () => {
-                setVideo({ file, preview: reader.result as string });
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const handleRemoveVideo = () => {
-        setVideo(null);
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
-    };
-
-    // Extract frames from video
-    const extractVideoFrames = async (videoFile: File): Promise<string[]> => {
-        return new Promise((resolve, reject) => {
-            const video = document.createElement('video');
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-
-            if (!ctx) {
-                reject(new Error('Canvas context not available'));
-                return;
-            }
-
-            const frames: string[] = [];
-            let frameIndex = 0;
-            // Extract frames at start, middle, and near end (if video is long enough)
-            const targetFrames = [0, 0.5, 0.9];
-
-            video.preload = 'metadata';
-            video.muted = true;
-            video.playsInline = true;
-            video.crossOrigin = 'anonymous';
-
-            const objectUrl = URL.createObjectURL(videoFile);
-            video.src = objectUrl;
-
-            video.onloadedmetadata = () => {
-                try {
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-
-                    // Determine how many frames to extract based on video duration
-                    const duration = video.duration;
-                    const framesToExtract = duration > 2
-                        ? targetFrames
-                        : [0]; // Only extract first frame for short videos
-
-                    // Start extracting first frame
-                    extractFrameAt(framesToExtract[0]);
-                } catch (error) {
-                    URL.revokeObjectURL(objectUrl);
-                    reject(error);
-                }
-            };
-
-            const extractFrameAt = (timeRatio: number) => {
-                try {
-                    video.currentTime = video.duration * timeRatio;
-                } catch (error) {
-                    URL.revokeObjectURL(objectUrl);
-                    reject(error);
-                }
-            };
-
-            video.onseeked = () => {
-                try {
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    const frameDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-                    frames.push(frameDataUrl);
-
-                    frameIndex++;
-                    const duration = video.duration;
-                    const framesToExtract = duration > 2 ? targetFrames : [0];
-
-                    if (frameIndex < framesToExtract.length) {
-                        // Extract next frame
-                        extractFrameAt(framesToExtract[frameIndex]);
-                    } else {
-                        // All frames extracted
-                        URL.revokeObjectURL(objectUrl);
-                        resolve(frames.length > 0 ? frames : []);
-                    }
-                } catch (error) {
-                    URL.revokeObjectURL(objectUrl);
-                    reject(error);
-                }
-            };
-
-            video.onerror = () => {
-                URL.revokeObjectURL(objectUrl);
-                reject(new Error('Failed to load video'));
-            };
-
-            // Timeout fallback
-            setTimeout(() => {
-                if (frames.length === 0) {
-                    URL.revokeObjectURL(objectUrl);
-                    reject(new Error('Video loading timeout'));
-                }
-            }, 30000); // 30 second timeout
-        });
-    };
-
-    const handleAnalyzeVideo = async (e?: React.FormEvent) => {
-        e?.preventDefault();
-        if ((!prompt.trim() && !video) || isAnalyzing) return;
-
-        setIsAnalyzing(true);
-
-        const handleError = () => {
-            setMessages(prev => {
-                const updated = [...prev];
-                updated[updated.length - 1] = {
-                    role: 'assistant',
-                    content: 'Maaf, terjadi kesalahan. Silakan coba lagi.',
-                };
-                return updated;
-            });
-        };
-
-        try {
-            // Extract frames from video if present
-            let extractedFrames: string[] = [];
-            const videoPreview = video?.preview;
-            if (video) {
-                extractedFrames = await extractVideoFrames(video.file);
-            }
-
-            // Prepare user message
-            const inputText = prompt.trim() || 'What\'s in this video?';
-            const userMessage: ChatMessage = {
-                role: 'user',
-                content: inputText,
-                ...(extractedFrames.length > 0 && {
-                    // Send first frame as imageUrl for API analysis
-                    imageUrl: extractedFrames[0],
-                    // Store video URL for display (to show video player in chat)
-                    videoUrl: videoPreview
-                })
-            };
-
-            const newMessages = [...messages, userMessage];
-            setMessages(newMessages);
-            setPrompt('');
-            resetHeight();
-            setVideo(null);
-            if (fileInputRef.current) {
-                fileInputRef.current.value = '';
-            }
-
-            // Add placeholder for assistant response
-            const assistantMessageIndex = newMessages.length;
-            setMessages([...newMessages, { role: 'assistant', content: '' }]);
-
-            // Call API
-            await streamChat({
-                endpoint: API_ENDPOINTS.videoAnalyze,
-                messages: newMessages,
-                onChunk: (content) => {
-                    setMessages(prev => {
-                        const updated = [...prev];
-                        updated[assistantMessageIndex] = {
-                            role: 'assistant',
-                            content: content
-                        };
-                        return updated;
-                    });
-                },
-                onError: handleError
-            });
-        } catch (error) {
-            console.error('Error analyzing video:', error);
-            handleError();
-        } finally {
-            setIsAnalyzing(false);
-        }
-    };
+    const {
+        prompt,
+        setPrompt,
+        video,
+        messages,
+        isAnalyzing,
+        sheetOpen,
+        setSheetOpen,
+        isListening,
+        isSpeechSupported,
+        historyItems,
+        fileInputRef,
+        messagesEndRef,
+        textareaRef,
+        handleVideoChange,
+        setVideoFile,
+        handleRemoveVideo,
+        handleAnalyzeVideo,
+        toggleVoiceRecognition,
+    } = useStateVideoAnalysis();
 
     return (
         <AsideLayout>
@@ -269,91 +70,123 @@ export default function VideoAnalysisPage() {
 
             <AsideInset>
                 <AsideMain maxWidth="6xl">
-                    <header className="h-20 flex items-center justify-between px-2 sm:px-0 bg-transparent sticky top-0 z-10 border-b border-border/40 backdrop-blur-md">
-                        <div className="flex items-center gap-3">
-                            <Video className="w-6 h-6 text-primary" />
-                            <div>
-                                <h1 className="text-xl font-bold text-foreground">Video Analysis AI</h1>
-                                <p className="text-xs text-muted-foreground">Upload video, ask questions, get insights</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <span className="text-sm text-muted-foreground">Powered by NEON.AI</span>
-                        </div>
-                    </header>
+                    <div className="space-y-8">
+                        {messages.length === 0 ? (
+                            <div className="space-y-12 py-6">
+                                <div className="space-y-4 text-center">
+                                    <h2 className="text-5xl font-black tracking-tighter leading-none bg-linear-to-br from-white via-white to-primary/50 bg-clip-text text-transparent">
+                                        Upload a video <br /> to <span className="gradient-text-purple-blue italic">analyze</span>
+                                    </h2>
 
-                    <div className="py-8 space-y-8">
-                        <div className="rounded-[2rem] border border-border/50 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden min-h-[60vh] flex flex-col">
-                            <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
-                                {messages.length === 0 ? (
-                                    <div className="h-full flex flex-col items-center justify-center text-center space-y-8 py-8">
-                                        <div className="w-16 h-16 flex items-center justify-center rounded-2xl bg-primary/10">
-                                            <Video className="w-10 h-10 text-primary" strokeWidth={1.5} />
+                                    <p className="text-base text-muted-foreground">
+                                        Leverage advanced computer vision to extract insights from your videos instantly.
+                                    </p>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3 w-full max-w-2xl mx-auto">
+                                    <button
+                                        onClick={() => {
+                                            setPrompt('What actions or activities are happening in this video?');
+                                            if (!video) {
+                                                fileInputRef.current?.click();
+                                            }
+                                        }}
+                                        className="w-full group flex items-start gap-3 rounded-2xl border border-sidebar-border/50 bg-sidebar-accent/50 hover:border-primary/40 hover:bg-primary/10 transition-all p-3 text-left"
+                                    >
+                                        <div className="p-2 rounded-lg bg-primary/15 text-primary">
+                                            <Video className="w-4 h-4" />
                                         </div>
-                                        <div className="space-y-4 max-w-2xl">
-                                            <h2 className="text-3xl font-bold tracking-tight text-foreground">Video Analysis AI</h2>
-                                            <p className="text-base text-muted-foreground">
-                                                Upload a video and get detailed analysis, descriptions, and answers to your questions.
-                                            </p>
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-semibold text-sidebar-foreground group-hover:text-primary">Identify Actions</p>
+                                            <p className="text-xs text-muted-foreground/80 line-clamp-2">What actions or activities are happening in this video?</p>
                                         </div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-xl">
-                                            <Card
-                                                className="cursor-pointer hover:border-primary/50 transition-all hover:bg-muted/50 py-4"
-                                                onClick={() => {
-                                                    fileInputRef.current?.click();
-                                                }}
-                                            >
-                                                <CardContent className="p-0 px-4">
-                                                    <p className="text-sm font-medium text-foreground leading-relaxed">
-                                                        Analyze Video Content
-                                                    </p>
-                                                </CardContent>
-                                            </Card>
+                                    </button>
 
-                                            <Card
-                                                className="cursor-pointer hover:border-primary/50 transition-all hover:bg-muted/50 py-4"
-                                                onClick={() => {
-                                                    setPrompt('What actions or activities are happening in this video?');
-                                                    setTimeout(() => textareaRef.current?.focus(), 150);
-                                                }}
-                                            >
-                                                <CardContent className="p-0 px-4">
-                                                    <p className="text-sm font-medium text-foreground leading-relaxed">
-                                                        Identify Actions
-                                                    </p>
-                                                </CardContent>
-                                            </Card>
+                                    <button
+                                        onClick={() => {
+                                            setPrompt('Describe this video in detail');
+                                            if (!video) {
+                                                fileInputRef.current?.click();
+                                            }
+                                        }}
+                                        className="w-full group flex items-start gap-3 rounded-2xl border border-sidebar-border/50 bg-sidebar-accent/50 hover:border-primary/40 hover:bg-primary/10 transition-all p-3 text-left"
+                                    >
+                                        <div className="p-2 rounded-lg bg-primary/15 text-primary">
+                                            <Film className="w-4 h-4" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-semibold text-sidebar-foreground group-hover:text-primary">Detailed Description</p>
+                                            <p className="text-xs text-muted-foreground/80 line-clamp-2">Describe this video in detail</p>
+                                        </div>
+                                    </button>
 
-                                            <Card
-                                                className="cursor-pointer hover:border-primary/50 transition-all hover:bg-muted/50 py-4"
-                                                onClick={() => {
-                                                    setPrompt('Describe this video in detail');
-                                                    setTimeout(() => textareaRef.current?.focus(), 150);
-                                                }}
-                                            >
-                                                <CardContent className="p-0 px-4">
-                                                    <p className="text-sm font-medium text-foreground leading-relaxed">
-                                                        Detailed Description
-                                                    </p>
-                                                </CardContent>
-                                            </Card>
+                                    <button
+                                        onClick={() => {
+                                            setPrompt('What is the mood or atmosphere of this video?');
+                                            if (!video) {
+                                                fileInputRef.current?.click();
+                                            }
+                                        }}
+                                        className="w-full group flex items-start gap-3 rounded-2xl border border-sidebar-border/50 bg-sidebar-accent/50 hover:border-primary/40 hover:bg-primary/10 transition-all p-3 text-left"
+                                    >
+                                        <div className="p-2 rounded-lg bg-primary/15 text-primary">
+                                            <MessageSquare className="w-4 h-4" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-semibold text-sidebar-foreground group-hover:text-primary">Analyze Mood</p>
+                                            <p className="text-xs text-muted-foreground/80 line-clamp-2">What is the mood or atmosphere of this video?</p>
+                                        </div>
+                                    </button>
 
-                                            <Card
-                                                className="cursor-pointer hover:border-primary/50 transition-all hover:bg-muted/50 py-4"
-                                                onClick={() => {
-                                                    setPrompt('What is the mood or atmosphere of this video?');
-                                                    setTimeout(() => textareaRef.current?.focus(), 150);
-                                                }}
-                                            >
-                                                <CardContent className="p-0 px-4">
-                                                    <p className="text-sm font-medium text-foreground leading-relaxed">
-                                                        Analyze Mood
-                                                    </p>
-                                                </CardContent>
-                                            </Card>
+                                    <button
+                                        onClick={() => {
+                                            setPrompt('Analyze video content');
+                                            if (!video) {
+                                                fileInputRef.current?.click();
+                                            }
+                                        }}
+                                        className="w-full group flex items-start gap-3 rounded-2xl border border-sidebar-border/50 bg-sidebar-accent/50 hover:border-primary/40 hover:bg-primary/10 transition-all p-3 text-left"
+                                    >
+                                        <div className="p-2 rounded-lg bg-primary/15 text-primary">
+                                            <Video className="w-4 h-4" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-semibold text-sidebar-foreground group-hover:text-primary">Analyze Content</p>
+                                            <p className="text-xs text-muted-foreground/80 line-clamp-2">Analyze video content</p>
+                                        </div>
+                                    </button>
+                                </div>
+
+                                {/* Upload Area */}
+                                <div
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="group relative cursor-pointer"
+                                    onDragOver={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                    }}
+                                    onDrop={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        const file = e.dataTransfer.files[0];
+                                        if (file) {
+                                            setVideoFile(file);
+                                        }
+                                    }}
+                                >
+                                    <div className="absolute -inset-1 bg-linear-to-r from-primary to-chart-3 rounded-[2.5rem] blur opacity-20 group-hover:opacity-40 transition duration-1000" />
+                                    <div className="relative bg-card/40 backdrop-blur-xl border-2 border-dashed border-border/50 rounded-[2rem] p-16 flex flex-col items-center justify-center gap-4 hover:border-primary/50 transition-all hover:bg-card/60 group">
+                                        <Upload className="w-16 h-16 text-primary/60 group-hover:text-primary transition-colors" />
+                                        <div className="text-center">
+                                            <p className="text-lg font-bold text-foreground mb-1">Drop your video here</p>
+                                            <p className="text-sm text-muted-foreground">or click to browse from your device</p>
                                         </div>
                                     </div>
-                                ) : (
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="rounded-[2rem] border border-border/50 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden min-h-[60vh] flex flex-col">
+                                <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
                                     <div className="space-y-6">
                                         {messages.map((message, index) => (
                                             <div
@@ -400,9 +233,9 @@ export default function VideoAnalysisPage() {
                                         ))}
                                         <div ref={messagesEndRef} />
                                     </div>
-                                )}
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 </AsideMain>
 
@@ -421,9 +254,11 @@ export default function VideoAnalysisPage() {
                     submitIcon={Send}
                     textareaRef={textareaRef}
                     maxWidth="6xl"
-                    footerClassName="bg-background/95 backdrop-blur-sm border-t border-border/40"
                     textareaClassName="min-h-[60px] max-h-[200px] pr-12"
                     submitDisabled={(!prompt.trim() && !video) || isAnalyzing}
+                    isListening={isListening}
+                    isSpeechSupported={isSpeechSupported}
+                    onVoiceToggle={toggleVoiceRecognition}
                     topSlot={
                         video ? (
                             <div className="flex items-center gap-3">
@@ -449,32 +284,15 @@ export default function VideoAnalysisPage() {
                         ) : undefined
                     }
                     beforeTextarea={
-                        <>
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                id="video"
-                                accept="video/*"
-                                onChange={handleVideoChange}
-                                className="hidden"
-                                disabled={isAnalyzing}
-                            />
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
-                                onClick={() => fileInputRef.current?.click()}
-                                disabled={isAnalyzing}
-                            >
-                                <Upload className="h-4 w-4" />
-                            </Button>
-                        </>
-                    }
-                    hint={
-                        <p className="text-xs text-muted-foreground text-center mt-2">
-                            Video Analysis AI may provide information that should be verified for accuracy.
-                        </p>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            id="video"
+                            accept="video/*"
+                            onChange={handleVideoChange}
+                            className="hidden"
+                            disabled={isAnalyzing}
+                        />
                     }
                 />
             </AsideInset>

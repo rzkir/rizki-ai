@@ -8,61 +8,28 @@ import { API_ENDPOINTS } from '@/lib/config';
 
 import { useTextareaRef } from '@/hooks/text-areaRef';
 
-import { Sparkles, ImageIcon, Scan } from 'lucide-react';
+type ChatMessage = Message & { videoUrl?: string };
 
-type ChatMessage = Message & { imageUrl?: string };
-
-export function useStateImageAnalysis() {
-    const [selectedImage, setSelectedImage] = useState<string | null>(null);
-    const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+export function useStateVideoAnalysis() {
+    const [prompt, setPrompt] = useState('');
+    const [video, setVideo] = useState<{ file: File; preview: string } | null>(null);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [prompt, setPrompt] = useState("");
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [sheetOpen, setSheetOpen] = useState(false);
     const [isListening, setIsListening] = useState(false);
     const [isSpeechSupported, setIsSpeechSupported] = useState(false);
-
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
     const recognitionRef = useRef<SpeechRecognition | null>(null);
     const voiceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const lastProcessedIndexRef = useRef<number>(-1);
+    const { textareaRef, resetHeight } = useTextareaRef({ input: prompt });
 
-    const { textareaRef, resetHeight } = useTextareaRef({
-        input: prompt,
-        maxHeight: 160,
-    });
+    const historyItems = messages.filter(message => message.role === 'user');
 
-    const suggestedPrompts = [
-        { icon: Sparkles, text: "Identify Objects", prompt: "What objects are in this image?" },
-        { icon: ImageIcon, text: "Analyze Colors", prompt: "Describe the color palette and visual style of this image" },
-        { icon: Scan, text: "Extract Text", prompt: "Extract and read any text visible in this image" },
-        { icon: Sparkles, text: "Scene Description", prompt: "Describe this image in detail" },
-    ];
-
-    const handleImageSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            // Validate file type
-            if (!file.type.match('image.*')) {
-                alert('Please select an image file');
-                return;
-            }
-
-            // Validate file size (max 10MB)
-            if (file.size > 10 * 1024 * 1024) {
-                alert('Please select an image smaller than 10MB');
-                return;
-            }
-
-            setSelectedImageFile(file);
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                setSelectedImage(event.target?.result as string);
-                setMessages([]);
-            };
-            reader.readAsDataURL(file);
-        }
-    }, []);
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
 
     // Initialize Speech Recognition
     useEffect(() => {
@@ -184,10 +151,138 @@ export function useStateImageAnalysis() {
         }
     }, [isListening, isSpeechSupported]);
 
-    const handleAnalyze = useCallback(async () => {
-        if (!selectedImage || !selectedImageFile) return;
+    const setVideoFile = useCallback((file: File) => {
+        // Validate file type
+        if (!file.type.match('video.*')) {
+            alert('Please select a video file');
+            return;
+        }
 
-        setIsLoading(true);
+        // Validate file size (max 50MB for video)
+        if (file.size > 50 * 1024 * 1024) {
+            alert('Please select a video smaller than 50MB');
+            return;
+        }
+
+        // Create preview
+        const reader = new FileReader();
+        reader.onload = () => {
+            setVideo({ file, preview: reader.result as string });
+        };
+        reader.readAsDataURL(file);
+    }, []);
+
+    const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setVideoFile(file);
+        }
+    };
+
+    const handleRemoveVideo = () => {
+        setVideo(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
+
+    // Extract frames from video
+    const extractVideoFrames = async (videoFile: File): Promise<string[]> => {
+        return new Promise((resolve, reject) => {
+            const video = document.createElement('video');
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            if (!ctx) {
+                reject(new Error('Canvas context not available'));
+                return;
+            }
+
+            const frames: string[] = [];
+            let frameIndex = 0;
+            // Extract frames at start, middle, and near end (if video is long enough)
+            const targetFrames = [0, 0.5, 0.9];
+
+            video.preload = 'metadata';
+            video.muted = true;
+            video.playsInline = true;
+            video.crossOrigin = 'anonymous';
+
+            const objectUrl = URL.createObjectURL(videoFile);
+            video.src = objectUrl;
+
+            video.onloadedmetadata = () => {
+                try {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+
+                    // Determine how many frames to extract based on video duration
+                    const duration = video.duration;
+                    const framesToExtract = duration > 2
+                        ? targetFrames
+                        : [0]; // Only extract first frame for short videos
+
+                    // Start extracting first frame
+                    extractFrameAt(framesToExtract[0]);
+                } catch (error) {
+                    URL.revokeObjectURL(objectUrl);
+                    reject(error);
+                }
+            };
+
+            const extractFrameAt = (timeRatio: number) => {
+                try {
+                    video.currentTime = video.duration * timeRatio;
+                } catch (error) {
+                    URL.revokeObjectURL(objectUrl);
+                    reject(error);
+                }
+            };
+
+            video.onseeked = () => {
+                try {
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const frameDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    frames.push(frameDataUrl);
+
+                    frameIndex++;
+                    const duration = video.duration;
+                    const framesToExtract = duration > 2 ? targetFrames : [0];
+
+                    if (frameIndex < framesToExtract.length) {
+                        // Extract next frame
+                        extractFrameAt(framesToExtract[frameIndex]);
+                    } else {
+                        // All frames extracted
+                        URL.revokeObjectURL(objectUrl);
+                        resolve(frames.length > 0 ? frames : []);
+                    }
+                } catch (error) {
+                    URL.revokeObjectURL(objectUrl);
+                    reject(error);
+                }
+            };
+
+            video.onerror = () => {
+                URL.revokeObjectURL(objectUrl);
+                reject(new Error('Failed to load video'));
+            };
+
+            // Timeout fallback
+            setTimeout(() => {
+                if (frames.length === 0) {
+                    URL.revokeObjectURL(objectUrl);
+                    reject(new Error('Video loading timeout'));
+                }
+            }, 30000); // 30 second timeout
+        });
+    };
+
+    const handleAnalyzeVideo = async (e?: React.FormEvent) => {
+        e?.preventDefault();
+        if ((!prompt.trim() && !video) || isAnalyzing) return;
+
+        setIsAnalyzing(true);
 
         const handleError = () => {
             setMessages(prev => {
@@ -198,42 +293,45 @@ export function useStateImageAnalysis() {
                 };
                 return updated;
             });
-            setIsLoading(false);
         };
 
         try {
-            // Convert image to base64
-            const imageBase64 = await new Promise<string>((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const base64 = (reader.result as string).split(',')[1];
-                    resolve(`data:image/${selectedImageFile.type.split('/')[1]};base64,${base64}`);
-                };
-                reader.onerror = reject;
-                reader.readAsDataURL(selectedImageFile);
-            });
+            // Extract frames from video if present
+            let extractedFrames: string[] = [];
+            const videoPreview = video?.preview;
+            if (video) {
+                extractedFrames = await extractVideoFrames(video.file);
+            }
 
             // Prepare user message
-            const inputText = prompt.trim() || "What's in this image?";
-            // Only include imageUrl for the first message
+            const inputText = prompt.trim() || 'What\'s in this video?';
             const userMessage: ChatMessage = {
                 role: 'user',
                 content: inputText,
-                ...(messages.length === 0 && { imageUrl: imageBase64 })
+                ...(extractedFrames.length > 0 && {
+                    // Send first frame as imageUrl for API analysis
+                    imageUrl: extractedFrames[0],
+                    // Store video URL for display (to show video player in chat)
+                    videoUrl: videoPreview
+                })
             };
 
             const newMessages = [...messages, userMessage];
             setMessages(newMessages);
             setPrompt('');
             resetHeight();
+            setVideo(null);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
 
             // Add placeholder for assistant response
             const assistantMessageIndex = newMessages.length;
             setMessages([...newMessages, { role: 'assistant', content: '' }]);
 
-            // Call API with streaming
+            // Call API
             await streamChat({
-                endpoint: API_ENDPOINTS.imageAnalyze,
+                endpoint: API_ENDPOINTS.videoAnalyze,
                 messages: newMessages,
                 onChunk: (content) => {
                     setMessages(prev => {
@@ -247,45 +345,36 @@ export function useStateImageAnalysis() {
                 },
                 onError: handleError
             });
-
-            setIsLoading(false);
         } catch (error) {
-            console.error('Error analyzing image:', error);
+            console.error('Error analyzing video:', error);
             handleError();
+        } finally {
+            setIsAnalyzing(false);
         }
-    }, [selectedImage, selectedImageFile, prompt, messages, resetHeight]);
-
-    const handleReset = useCallback(() => {
-        setSelectedImage(null);
-        setSelectedImageFile(null);
-        setMessages([]);
-        setPrompt("");
-        resetHeight();
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
-    }, [resetHeight]);
+    };
 
     return {
         // state
-        selectedImage,
-        selectedImageFile,
-        messages,
-        isLoading,
         prompt,
         setPrompt,
+        video,
+        setVideo,
+        messages,
+        isAnalyzing,
         sheetOpen,
         setSheetOpen,
         isListening,
         isSpeechSupported,
-        suggestedPrompts,
+        historyItems,
         // refs
         fileInputRef,
+        messagesEndRef,
         textareaRef,
         // handlers
-        handleImageSelect,
-        handleAnalyze,
-        handleReset,
+        handleVideoChange,
+        setVideoFile,
+        handleRemoveVideo,
+        handleAnalyzeVideo,
         toggleVoiceRecognition,
     };
 }
