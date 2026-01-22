@@ -66,15 +66,33 @@ export function Turnstile({ onVerify, onError, onExpire, className }: TurnstileP
 
     // Load Turnstile script with explicit rendering mode
     // Using ?render=explicit for programmatic control as per Cloudflare docs
-    // Note: Cannot use async/defer when using turnstile.ready()
+    // IMPORTANT: Do NOT use async or defer attributes - script must load synchronously
     const script = document.createElement("script")
     script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
-    // Do not set async or defer when using turnstile.ready()
-    // script.async = true
-    // script.defer = true
+    // Explicitly ensure async and defer are NOT set
+    if (script.hasAttribute("async")) {
+      script.removeAttribute("async")
+    }
+    if (script.hasAttribute("defer")) {
+      script.removeAttribute("defer")
+    }
 
     script.onload = () => {
-      setIsLoaded(true)
+      // Ensure window.turnstile is available before marking as loaded
+      if (window.turnstile) {
+        setIsLoaded(true)
+      } else {
+        // Retry after a short delay if turnstile is not immediately available
+        setTimeout(() => {
+          if (window.turnstile) {
+            setIsLoaded(true)
+          } else {
+            console.error("Turnstile API not available after script load")
+            setHasError(true)
+            onError?.()
+          }
+        }, 100)
+      }
     }
 
     script.onerror = () => {
@@ -101,6 +119,7 @@ export function Turnstile({ onVerify, onError, onExpire, className }: TurnstileP
   }, [onError])
 
   useEffect(() => {
+    // Wait for script to load and ensure window.turnstile is available
     if (!isLoaded || !containerRef.current || !window.turnstile || hasError) return
 
     const siteKey = process.env.NEXT_PUBLIC_SITE_KEY_CLOUDFLARE
@@ -113,43 +132,41 @@ export function Turnstile({ onVerify, onError, onExpire, className }: TurnstileP
       return
     }
 
-    // Use turnstile.ready() to ensure Turnstile is fully loaded before rendering
-    // This is recommended by Cloudflare documentation for explicit rendering
-    window.turnstile.ready(() => {
-      const container = containerRef.current;
-      if (!container) return;
+    const container = containerRef.current;
+    if (!container) return;
 
-      try {
-        // Render Turnstile widget with explicit rendering
-        const widgetId = window.turnstile.render(container, {
-          sitekey: siteKey,
-          theme: "auto", // Automatically adapts to user's theme preference
-          size: "normal", // Standard size widget
-          callback: (token: string) => {
-            onVerify(token)
-          },
-          "error-callback": (errorCode?: string) => {
-            console.error("Turnstile error:", errorCode)
-            onError?.()
-            requestAnimationFrame(() => {
-              setHasError(true)
-            })
-          },
-          "expired-callback": () => {
-            console.warn("Turnstile token expired")
-            onExpire?.()
-          },
-        })
+    try {
+      // Render Turnstile widget with explicit rendering
+      // Since we already checked isLoaded and window.turnstile exists,
+      // we can directly call render without turnstile.ready()
+      const widgetId = window.turnstile.render(container, {
+        sitekey: siteKey,
+        theme: "auto", // Automatically adapts to user's theme preference
+        size: "normal", // Standard size widget
+        callback: (token: string) => {
+          onVerify(token)
+        },
+        "error-callback": (errorCode?: string) => {
+          console.error("Turnstile error:", errorCode)
+          onError?.()
+          requestAnimationFrame(() => {
+            setHasError(true)
+          })
+        },
+        "expired-callback": () => {
+          console.warn("Turnstile token expired")
+          onExpire?.()
+        },
+      })
 
-        widgetIdRef.current = widgetId
-      } catch (err) {
-        console.error("Error rendering Turnstile widget:", err)
-        onError?.()
-        requestAnimationFrame(() => {
-          setHasError(true)
-        })
-      }
-    })
+      widgetIdRef.current = widgetId
+    } catch (err) {
+      console.error("Error rendering Turnstile widget:", err)
+      onError?.()
+      requestAnimationFrame(() => {
+        setHasError(true)
+      })
+    }
 
     return () => {
       if (widgetIdRef.current && window.turnstile) {
