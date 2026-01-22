@@ -132,6 +132,7 @@ export function LoginForm({
           </Field>
           <Field>
             <Turnstile
+              key="signin-turnstile"
               onVerify={(token) => setTurnstileToken(token)}
               onError={() => setTurnstileToken(null)}
               onExpire={() => setTurnstileToken(null)}

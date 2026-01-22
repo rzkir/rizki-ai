@@ -49,19 +49,25 @@ export function Turnstile({ onVerify, onError, onExpire, className }: TurnstileP
   const [isLoaded, setIsLoaded] = useState(scriptLoaded || !!window.turnstile)
   const [hasError, setHasError] = useState(false)
   const isRenderedRef = useRef(false)
+  const callbacksRef = useRef({ onVerify, onError, onExpire })
+
+  // Update callbacks ref when they change (without causing re-renders)
+  useEffect(() => {
+    callbacksRef.current = { onVerify, onError, onExpire }
+  }, [onVerify, onError, onExpire])
 
   // Memoize callbacks to prevent unnecessary re-renders
   const handleVerify = useCallback((token: string) => {
-    onVerify(token)
-  }, [onVerify])
+    callbacksRef.current.onVerify(token)
+  }, [])
 
   const handleError = useCallback(() => {
-    onError?.()
-  }, [onError])
+    callbacksRef.current.onError?.()
+  }, [])
 
   const handleExpire = useCallback(() => {
-    onExpire?.()
-  }, [onExpire])
+    callbacksRef.current.onExpire?.()
+  }, [])
 
   useEffect(() => {
     // Filter out 401 errors from Cloudflare PAT challenges (these are normal warnings)
@@ -188,6 +194,12 @@ export function Turnstile({ onVerify, onError, onExpire, className }: TurnstileP
     const container = containerRef.current;
     if (!container) return;
 
+    // Check if container already has a widget (prevent duplicate renders)
+    if (container.querySelector('iframe[src*="challenges.cloudflare.com"]')) {
+      isRenderedRef.current = true
+      return
+    }
+
     try {
       // Render Turnstile widget with explicit rendering
       const widgetId = window.turnstile.render(container, {
@@ -226,7 +238,8 @@ export function Turnstile({ onVerify, onError, onExpire, className }: TurnstileP
         }
       }
     }
-  }, [isLoaded, hasError, handleVerify, handleError, handleExpire])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoaded, hasError])
 
   const reset = () => {
     if (widgetIdRef.current && window.turnstile) {

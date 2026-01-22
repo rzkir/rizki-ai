@@ -201,6 +201,7 @@ export function SignupForm({
               </Field>
               <Field>
                 <Turnstile
+                  key="signup-turnstile"
                   onVerify={(token) => setTurnstileToken(token)}
                   onError={() => setTurnstileToken(null)}
                   onExpire={() => setTurnstileToken(null)}
