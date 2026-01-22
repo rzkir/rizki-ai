@@ -1,15 +1,20 @@
 'use client';
 
-import { Sparkles, Download, Loader2, ArrowUp, Wand2, Check, History, X, Clock, ImageIcon } from 'lucide-react';
+import { Sparkles, Download, ArrowUp, Wand2, Check, History, X, Clock, ImageIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 
 import Image from 'next/image';
 
 import { Sidebar } from '@/components/ui/sidebar/Sidebar';
-import { AsideLayout, AsideInset, AsideMain, AsideFooter, AsideSectionDivider } from '@/components/ui/aside/Aside';
 
-import { useStateImageGenerator, RESOLUTIONS, SUGGESTED_PROMPTS } from './lib/useStateImageGenerator';
+import { AsideLayout, AsideInset, AsideMain, AsideSectionDivider } from '@/components/ui/aside/Aside';
+
+import { InputArea } from '@/components/ui/input-area/InputArea';
+
+import { useStateImageGenerator } from './lib/useStateImageGenerator';
+
+import { useTextareaRef } from '@/hooks/text-areaRef';
 
 export default function ImageGenerator() {
     const {
@@ -28,7 +33,14 @@ export default function ImageGenerator() {
         handleKeyPress,
         handleViewHistory,
         handleRemoveHistory,
+        RESOLUTIONS,
+        SUGGESTED_PROMPTS,
     } = useStateImageGenerator();
+
+    const { textareaRef, resetHeight } = useTextareaRef({
+        input: prompt,
+        maxHeight: 144, // max-h-36 = 144px
+    });
 
     /* History items content */
     const historyContent = (
@@ -212,7 +224,11 @@ export default function ImageGenerator() {
                                         Download Image
                                     </Button>
                                     <Button
-                                        onClick={() => { setImageUrl(''); setPrompt(''); }}
+                                        onClick={() => {
+                                            setImageUrl('');
+                                            setPrompt('');
+                                            resetHeight();
+                                        }}
                                         variant="outline"
                                         className="w-full h-12 font-semibold"
                                     >
@@ -240,32 +256,18 @@ export default function ImageGenerator() {
                 </AsideMain>
 
                 {/* Input Area (fixed bottom) */}
-                <AsideFooter>
-                    <div className="flex items-end gap-3 rounded-2xl border-2 border-border/50 bg-card/80 backdrop-blur-sm p-4 shadow-xl focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
-                        <div className="flex-1 flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-primary/10 shrink-0">
-                                <Sparkles className="w-5 h-5 text-primary" />
-                            </div>
-                            <textarea
-                                value={prompt}
-                                onChange={(e) => setPrompt(e.target.value)}
-                                onKeyDown={handleKeyPress}
-                                placeholder="Describe the image you want to generate... (Enter to generate)"
-                                disabled={isLoading}
-                                className="flex-1 bg-transparent text-foreground resize-none min-h-[56px] max-h-36 py-2 px-3 focus:outline-none placeholder:text-muted-foreground/60 disabled:opacity-50 text-base"
-                                rows={1}
-                            />
-                        </div>
-                        <Button
-                            onClick={handleGenerate}
-                            disabled={!prompt.trim() || isLoading}
-                            size="lg"
-                            className="h-12 w-12 shrink-0 rounded-xl bg-primary hover:bg-primary/90"
-                        >
-                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowUp className="w-5 h-5" />}
-                        </Button>
-                    </div>
-                </AsideFooter>
+                <InputArea
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    onKeyDown={handleKeyPress}
+                    onSubmit={handleGenerate}
+                    placeholder="Describe the image you want to generate... (Enter to generate)"
+                    disabled={isLoading}
+                    isLoading={isLoading}
+                    icon={Sparkles}
+                    submitIcon={ArrowUp}
+                    textareaRef={textareaRef}
+                />
             </AsideInset>
         </AsideLayout>
     );

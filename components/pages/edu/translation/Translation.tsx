@@ -1,354 +1,182 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from 'react';
-
-import { Button } from '@/components/ui/button';
-
-import { Textarea } from '@/components/ui/textarea';
-
 import { Card, CardContent } from '@/components/ui/card';
 
-import { Send, Loader2, User, MessageSquare, Languages } from 'lucide-react';
+import { Send, User, MessageSquare, Languages } from 'lucide-react';
 
 import { MarkdownRenderer } from '@/components/markdown-renderer';
 
 import { LoadingDots } from '@/components/LoadingDots';
 
-import { streamChat } from '@/lib/api-client';
+import { Sidebar } from '@/components/ui/sidebar/Sidebar';
 
-import { API_ENDPOINTS } from '@/lib/config';
+import { AsideLayout, AsideInset, AsideMain, AsideSectionDivider } from '@/components/ui/aside/Aside';
 
-import { useTextareaRef } from '@/hooks/text-areaRef';
+import { InputArea } from '@/components/ui/input-area/InputArea';
+
+import { useStateTranslation } from './lib/useStateTranslation';
 
 export default function Chat() {
-    const [messages, setMessages] = useState<Message[]>([]);
-    const [input, setInput] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
-    const messagesContainerRef = useRef<HTMLDivElement>(null);
-    const isUserScrollingRef = useRef<boolean>(false);
-    const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const isProgrammaticScrollRef = useRef<boolean>(false);
-    const autoScrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const { textareaRef, resetHeight } = useTextareaRef({ input });
+    const {
+        messages,
+        input,
+        setInput,
+        isLoading,
+        sheetOpen,
+        setSheetOpen,
+        isListening,
+        isSpeechSupported,
+        historyItems,
+        messagesEndRef,
+        messagesContainerRef,
+        textareaRef,
+        handleSubmit,
+        toggleVoiceRecognition,
+    } = useStateTranslation();
 
-    // Helper function to check if user is near bottom of scroll container
-    const isNearBottom = useCallback(
-        (container: HTMLElement, threshold = 100) => {
-            const { scrollTop, scrollHeight, clientHeight } = container;
-            return scrollHeight - scrollTop - clientHeight < threshold;
-        },
-        []
-    );
-
-    // Helper function to perform programmatic scroll
-    const performScroll = useCallback(() => {
-        if (!messagesEndRef.current || isUserScrollingRef.current) return;
-
-        isProgrammaticScrollRef.current = true;
-        messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-
-        setTimeout(() => {
-            isProgrammaticScrollRef.current = false;
-        }, 500);
-    }, []);
-
-    // Helper function to clear all timeouts
-    const clearAllTimeouts = useCallback(() => {
-        if (scrollTimeoutRef.current) {
-            clearTimeout(scrollTimeoutRef.current);
-            scrollTimeoutRef.current = null;
-        }
-        if (autoScrollTimeoutRef.current) {
-            clearTimeout(autoScrollTimeoutRef.current);
-            autoScrollTimeoutRef.current = null;
-        }
-    }, []);
-
-    // Auto-scroll with debounce - only if user is not manually scrolling
-    useEffect(() => {
-        if (!messagesContainerRef.current || !messagesEndRef.current || isUserScrollingRef.current) {
-            return;
-        }
-
-        if (autoScrollTimeoutRef.current) {
-            clearTimeout(autoScrollTimeoutRef.current);
-        }
-
-        autoScrollTimeoutRef.current = setTimeout(() => {
-            if (isUserScrollingRef.current) return;
-
-            const container = messagesContainerRef.current;
-            if (!container) return;
-
-            if (isNearBottom(container, 50)) {
-                requestAnimationFrame(() => {
-                    setTimeout(() => performScroll(), 50);
-                });
-            }
-        }, 300);
-
-        return () => {
-            if (autoScrollTimeoutRef.current) {
-                clearTimeout(autoScrollTimeoutRef.current);
-            }
-        };
-    }, [messages, isNearBottom, performScroll]);
-
-    // Handle manual scroll detection
-    const handleScroll = useCallback(() => {
-        if (!messagesContainerRef.current || isProgrammaticScrollRef.current) return;
-
-        isUserScrollingRef.current = true;
-
-        if (scrollTimeoutRef.current) {
-            clearTimeout(scrollTimeoutRef.current);
-        }
-
-        scrollTimeoutRef.current = setTimeout(() => {
-            if (messagesContainerRef.current && isNearBottom(messagesContainerRef.current, 50)) {
-                isUserScrollingRef.current = false;
-                performScroll();
-            }
-        }, 2000);
-    }, [isNearBottom, performScroll]);
-
-    // Add scroll event listener
-    useEffect(() => {
-        const container = messagesContainerRef.current;
-        if (!container) return;
-
-        container.addEventListener('scroll', handleScroll);
-        return () => {
-            container.removeEventListener('scroll', handleScroll);
-            clearAllTimeouts();
-        };
-    }, [handleScroll, clearAllTimeouts]);
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!input.trim() || isLoading) return;
-
-        const inputText = input.trim();
-        setInput('');
-        resetHeight();
-
-        const userMessage: Message = { role: 'user', content: inputText };
-        const newMessages = [...messages, userMessage];
-        setMessages(newMessages);
-
-        // Reset manual scroll flag when user sends a new message
-        isUserScrollingRef.current = false;
-        clearAllTimeouts();
-
-        // Force scroll to bottom immediately when user sends a message
-        setTimeout(() => performScroll(), 50);
-
-        setIsLoading(true);
-
-        const assistantMessageIndex = newMessages.length;
-        setMessages([...newMessages, { role: 'assistant', content: '' }]);
-
-        const handleError = () => {
-            setMessages(prev => {
-                const updated = [...prev];
-                updated[assistantMessageIndex] = {
-                    role: 'assistant',
-                    content: 'Maaf, terjadi kesalahan. Silakan coba lagi.',
-                };
-                return updated;
-            });
-        };
-
-        try {
-            await streamChat({
-                endpoint: API_ENDPOINTS.translation,
-                messages: newMessages,
-                onChunk: (content) => {
-                    setMessages(prev => {
-                        const updated = [...prev];
-                        updated[assistantMessageIndex] = {
-                            role: 'assistant',
-                            content: content,
-                        };
-                        return updated;
-                    });
-                },
-                onError: handleError
-            });
-        } catch (error) {
-            console.error('Error:', error);
-            handleError();
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    const quickPrompts = [
+        { title: 'English to Indonesian', prompt: 'Translate "Hello, how are you?" to Indonesian', icon: Languages },
+        { title: 'Indonesian to English', prompt: 'Terjemahkan "Selamat pagi" ke bahasa Inggris', icon: Languages },
+        { title: 'Multi-language', prompt: 'Translate this text to Spanish: "Good morning"', icon: Languages },
+        { title: 'Translation Tips', prompt: 'Jelaskan perbedaan antara terjemahan literal dan terjemahan kontekstual', icon: Languages },
+    ];
 
     return (
-        <div className="flex flex-col min-h-screen bg-background">
-            {/* Messages Area */}
-            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto">
-                {messages.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center p-8">
-                        <div className="max-w-4xl w-full space-y-8 flex flex-col items-center">
-                            {/* Languages Icon */}
-                            <div className="w-16 h-16 flex items-center justify-center">
-                                <Languages className="w-16 h-16 text-foreground opacity-80" strokeWidth={1.5} />
-                            </div>
-
-                            {/* Welcome Message */}
-                            <div className="text-center space-y-4">
-                                <h1 className="text-4xl font-bold tracking-tight text-foreground leading-tight">
-                                    Translation AI Assistant
-                                </h1>
-                                <p className="text-lg text-muted-foreground">
-                                    Get accurate translations and expert language guidance across multiple languages
-                                </p>
-                            </div>
-
-                            {/* Suggested Translation Actions */}
-                            <div className="grid grid-cols-2 gap-3 w-full max-w-2xl">
-                                <Card
-                                    className="cursor-pointer hover:border-primary/50 transition-all hover:bg-muted/50 py-4"
-                                    onClick={() => setInput('Translate "Hello, how are you?" to Indonesian')}
-                                >
-                                    <CardContent className="p-0 px-4">
-                                        <p className="text-sm font-medium text-foreground leading-relaxed">
-                                            English to Indonesian
-                                        </p>
-                                    </CardContent>
-                                </Card>
-
-                                <Card
-                                    className="cursor-pointer hover:border-primary/50 transition-all hover:bg-muted/50 py-4"
-                                    onClick={() => setInput('Terjemahkan "Selamat pagi" ke bahasa Inggris')}
-                                >
-                                    <CardContent className="p-0 px-4">
-                                        <p className="text-sm font-medium text-foreground leading-relaxed">
-                                            Indonesian to English
-                                        </p>
-                                    </CardContent>
-                                </Card>
-
-                                <Card
-                                    className="cursor-pointer hover:border-primary/50 transition-all hover:bg-muted/50 py-4"
-                                    onClick={() => setInput('Translate this text to Spanish: "Good morning"')}
-                                >
-                                    <CardContent className="p-0 px-4">
-                                        <p className="text-sm font-medium text-foreground leading-relaxed">
-                                            Multi-language
-                                        </p>
-                                    </CardContent>
-                                </Card>
-
-                                <Card
-                                    className="cursor-pointer hover:border-primary/50 transition-all hover:bg-muted/50 py-4"
-                                    onClick={() => setInput('Jelaskan perbedaan antara terjemahan literal dan terjemahan kontekstual')}
-                                >
-                                    <CardContent className="p-0 px-4">
-                                        <p className="text-sm font-medium text-foreground leading-relaxed">
-                                            Translation Tips
-                                        </p>
-                                    </CardContent>
-                                </Card>
-                            </div>
-
-                            {/* Translation Assistant Greeting */}
-                            <div className="bg-transparent rounded-lg p-4 max-w-2xl mx-auto flex items-start gap-3">
-                                <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-1">
-                                    <MessageSquare className="w-4 h-4 text-primary" />
-                                </div>
-                                <div className="flex flex-col">
-                                    <p className="text-foreground/90 text-sm leading-relaxed">
-                                        Hello! I&apos;m your Translation AI assistant.
-                                    </p>
-                                    <p className="text-foreground/70 text-sm leading-relaxed mt-1">
-                                        I specialize in accurate translations between languages, maintaining context, tone, and cultural nuances. I can help with translations, language explanations, and cultural context.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
-                        {messages.map((message, index) => (
-                            <div
-                                key={index}
-                                className={`flex gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                            >
-                                {message.role === 'assistant' && (
-                                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                                        <MessageSquare className="w-4 h-4 text-primary" />
-                                    </div>
-                                )}
+        <AsideLayout>
+            <Sidebar
+                header={{
+                    icon: Languages,
+                    title: 'Translation AI',
+                    subtitle: 'Multilingual helper',
+                }}
+                open={sheetOpen}
+                onOpenChange={setSheetOpen}
+                mobileIcon={Languages}
+            >
+                <div className="space-y-6">
+                    <AsideSectionDivider>Riwayat</AsideSectionDivider>
+                    {historyItems.length === 0 ? (
+                        <p className="text-xs text-muted-foreground">Belum ada riwayat percakapan.</p>
+                    ) : (
+                        <div className="space-y-2">
+                            {historyItems.map((item, idx) => (
                                 <div
-                                    className={`max-w-[80%] rounded-lg px-5 py-4 ${message.role === 'user'
-                                        ? 'bg-card border border-border/40 text-foreground'
-                                        : 'text-foreground'
-                                        }`}
+                                    key={idx}
+                                    className="rounded-2xl border border-sidebar-border/50 bg-sidebar-accent/50 px-4 py-3 text-sm text-sidebar-foreground line-clamp-2"
+                                    title={item.content}
                                 >
-                                    {message.role === 'user' ? (
-                                        <p className="whitespace-pre-wrap wrap-break-word text-base leading-relaxed text-foreground/95">{message.content}</p>
-                                    ) : message.content === '' ? (
-                                        <LoadingDots />
-                                    ) : (
-                                        <div className="text-foreground prose prose-sm max-w-none">
-                                            <MarkdownRenderer content={message.content} />
-                                        </div>
-                                    )}
+                                    {item.content}
                                 </div>
-                                {message.role === 'user' && (
-                                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                                        <User className="w-4 h-4 text-primary" />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </Sidebar>
+
+            <AsideInset>
+                <AsideMain maxWidth="6xl">
+                    <div className="py-8 space-y-8">
+                        <div className="min-h-[60vh] flex flex-col">
+                            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
+                                {messages.length === 0 ? (
+                                    <div className="h-full flex flex-col items-center justify-center text-center space-y-8 py-8">
+                                        <div className="w-16 h-16 flex items-center justify-center rounded-2xl bg-primary/10">
+                                            <Languages className="w-10 h-10 text-primary" strokeWidth={1.5} />
+                                        </div>
+
+                                        <div className="space-y-4 max-w-2xl">
+                                            <h2 className="text-3xl font-bold tracking-tight text-foreground">Translation AI</h2>
+                                            <p className="text-base text-muted-foreground">
+                                                Get accurate translations and expert language guidance across multiple languages.
+                                            </p>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl mx-auto">
+                                            {quickPrompts.map((item, i) => (
+                                                <Card
+                                                    key={i}
+                                                    className="cursor-pointer hover:border-primary/50 transition-all hover:bg-muted/50 py-4"
+                                                    onClick={() => {
+                                                        setInput(item.prompt);
+                                                        setTimeout(() => textareaRef.current?.focus(), 150);
+                                                    }}
+                                                >
+                                                    <CardContent className="p-0 px-4 flex items-center gap-3">
+                                                        <div className="p-2 rounded-lg bg-primary/15 text-primary">
+                                                            <item.icon className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="min-w-0 text-left">
+                                                            <p className="text-sm font-semibold text-foreground leading-relaxed">{item.title}</p>
+                                                            <p className="text-xs text-muted-foreground line-clamp-2">{item.prompt}</p>
+                                                        </div>
+                                                    </CardContent>
+                                                </Card>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-6">
+                                        {messages.map((message, index) => (
+                                            <div
+                                                key={index}
+                                                className={`flex gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                                            >
+                                                {message.role === 'assistant' && (
+                                                    <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0 shadow-sm">
+                                                        <MessageSquare className="w-5 h-5 text-primary" />
+                                                    </div>
+                                                )}
+                                                <div
+                                                    className={`max-w-[80%] rounded-2xl px-5 py-4 shadow-sm ${message.role === 'user'
+                                                        ? 'bg-card border border-border/40 text-foreground'
+                                                        : 'bg-muted/30 border border-border/30 text-foreground'
+                                                        }`}
+                                                >
+                                                    {message.role === 'user' ? (
+                                                        <p className="whitespace-pre-wrap wrap-break-word text-base leading-relaxed text-foreground/95">{message.content}</p>
+                                                    ) : message.content === '' ? (
+                                                        <LoadingDots />
+                                                    ) : (
+                                                        <div className="text-foreground prose prose-sm max-w-none">
+                                                            <MarkdownRenderer content={message.content} />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                {message.role === 'user' && (
+                                                    <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0 shadow-sm">
+                                                        <User className="w-5 h-5 text-primary" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                        <div ref={messagesEndRef} />
                                     </div>
                                 )}
                             </div>
-                        ))}
-                        <div ref={messagesEndRef} />
+                        </div>
                     </div>
-                )}
-            </div>
+                </AsideMain>
 
-            {/* Fixed Input Area */}
-            <div className="border-t border-border bg-background px-6 py-4 sticky bottom-0">
-                <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
-                    <div className="flex gap-2 items-end">
-                        <div className="flex-1 relative">
-                            <Textarea
-                                ref={textareaRef}
-                                value={input}
-                                onChange={(e) => setInput(e.target.value)}
-                                placeholder={"Enter text to translate or ask about languages..."}
-                                className="min-h-[60px] max-h-[200px] resize-none bg-card border border-border/60 focus-visible:border-primary/50 focus-visible:ring-primary/20 pr-12 text-foreground placeholder:text-muted-foreground placeholder:text-sm overflow-y-auto"
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault();
-                                        handleSubmit(e);
-                                    }
-                                }}
-                                disabled={isLoading}
-                                rows={1}
-                            />
-                        </div>
-                        <div className="flex gap-2">
-                            <Button
-                                type="submit"
-                                disabled={!input.trim() || isLoading}
-                                className="shrink-0 w-10 h-10 rounded-full bg-transparent hover:bg-sidebar-accent text-foreground p-0"
-                            >
-                                {isLoading ? (
-                                    <Loader2 className="h-5 w-5 animate-spin" />
-                                ) : (
-                                    <Send className="h-5 w-5" />
-                                )}
-                            </Button>
-                        </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground text-center mt-2">
-                        Translation AI Assistant provides accurate translations and language guidance. Translations maintain context and cultural nuances for natural results.
-                    </p>
-                </form>
-            </div>
-        </div>
+                <InputArea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSubmit();
+                        }
+                    }}
+                    onSubmit={handleSubmit}
+                    placeholder="Enter text to translate or ask about languages..."
+                    isLoading={isLoading}
+                    submitIcon={Send}
+                    textareaRef={textareaRef}
+                    maxWidth="6xl"
+                    isListening={isListening}
+                    isSpeechSupported={isSpeechSupported}
+                    onVoiceToggle={toggleVoiceRecognition}
+                />
+            </AsideInset>
+        </AsideLayout>
     );
 }
