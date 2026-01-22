@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useCallback } from "react"
 
 declare global {
   interface Window {
@@ -27,6 +27,11 @@ declare global {
   }
 }
 
+// Singleton pattern to ensure script is only loaded once
+let scriptLoading = false
+let scriptLoaded = false
+const loadCallbacks: Array<() => void> = []
+
 interface ResetTurnstileRef {
   resetTurnstile: () => void
 }
@@ -41,13 +46,26 @@ interface TurnstileProps {
 export function Turnstile({ onVerify, onError, onExpire, className }: TurnstileProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const widgetIdRef = useRef<string | null>(null)
-  const [isLoaded, setIsLoaded] = useState(false)
+  const [isLoaded, setIsLoaded] = useState(scriptLoaded || !!window.turnstile)
   const [hasError, setHasError] = useState(false)
+  const isRenderedRef = useRef(false)
+
+  // Memoize callbacks to prevent unnecessary re-renders
+  const handleVerify = useCallback((token: string) => {
+    onVerify(token)
+  }, [onVerify])
+
+  const handleError = useCallback(() => {
+    onError?.()
+  }, [onError])
+
+  const handleExpire = useCallback(() => {
+    onExpire?.()
+  }, [onExpire])
 
   useEffect(() => {
     // Filter out 401 errors from Cloudflare PAT challenges (these are normal warnings)
-    // These errors don't affect Turnstile functionality
-    const handleError = (event: ErrorEvent) => {
+    const handleErrorEvent = (event: ErrorEvent) => {
       const message = event.message || ""
       const source = event.filename || ""
 
@@ -56,76 +74,111 @@ export function Turnstile({ onVerify, onError, onExpire, className }: TurnstileP
         source.includes("challenges.cloudflare.com") &&
         (message.includes("401") || message.includes("Failed to load resource"))
       ) {
-        event.preventDefault() // Prevent error from showing in console
+        event.preventDefault()
         return false
       }
       return true
     }
 
-    window.addEventListener("error", handleError, true)
+    window.addEventListener("error", handleErrorEvent, true)
 
-    // Load Turnstile script with explicit rendering mode
-    // Using ?render=explicit for programmatic control as per Cloudflare docs
-    // IMPORTANT: Do NOT use async or defer attributes - script must load synchronously
+    // Check if script already exists in DOM
+    const existingScript = document.querySelector(
+      'script[src*="challenges.cloudflare.com/turnstile"]'
+    )
+
+    // If script already loaded or exists, mark as loaded
+    if (window.turnstile || existingScript) {
+      scriptLoaded = true
+      // Use requestAnimationFrame to avoid synchronous setState in effect
+      requestAnimationFrame(() => {
+        setIsLoaded(true)
+        // Execute any pending callbacks
+        loadCallbacks.forEach(cb => cb())
+        loadCallbacks.length = 0
+      })
+      return () => {
+        window.removeEventListener("error", handleErrorEvent, true)
+      }
+    }
+
+    // If script is already loading, wait for it
+    if (scriptLoading) {
+      loadCallbacks.push(() => {
+        setIsLoaded(true)
+      })
+      return () => {
+        window.removeEventListener("error", handleErrorEvent, true)
+      }
+    }
+
+    // Start loading script
+    scriptLoading = true
+
     const script = document.createElement("script")
     script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
-    // Explicitly ensure async and defer are NOT set
-    if (script.hasAttribute("async")) {
-      script.removeAttribute("async")
-    }
-    if (script.hasAttribute("defer")) {
-      script.removeAttribute("defer")
-    }
+    script.id = "turnstile-script" // Add ID to identify script
 
     script.onload = () => {
-      // Ensure window.turnstile is available before marking as loaded
+      scriptLoaded = true
+      scriptLoading = false
+
+      // Ensure window.turnstile is available
       if (window.turnstile) {
         setIsLoaded(true)
+        // Execute all pending callbacks
+        loadCallbacks.forEach(cb => cb())
+        loadCallbacks.length = 0
       } else {
-        // Retry after a short delay if turnstile is not immediately available
         setTimeout(() => {
           if (window.turnstile) {
             setIsLoaded(true)
+            loadCallbacks.forEach(cb => cb())
+            loadCallbacks.length = 0
           } else {
             console.error("Turnstile API not available after script load")
             setHasError(true)
-            onError?.()
+            handleError()
           }
         }, 100)
       }
     }
 
     script.onerror = () => {
+      scriptLoading = false
       console.error("Failed to load Cloudflare Turnstile script")
       setHasError(true)
-      onError?.()
+      handleError()
     }
 
-    document.body.appendChild(script)
+    document.head.appendChild(script)
 
     return () => {
-      // Remove error listener
-      window.removeEventListener("error", handleError, true)
-
-      // Cleanup script
-      if (document.body.contains(script)) {
-        document.body.removeChild(script)
-      }
-      // Remove widget on unmount
+      window.removeEventListener("error", handleErrorEvent, true)
+      // Don't remove script on unmount - it's shared across components
+      // Only remove widget
       if (widgetIdRef.current && window.turnstile) {
-        window.turnstile.remove(widgetIdRef.current)
+        try {
+          window.turnstile.remove(widgetIdRef.current)
+          widgetIdRef.current = null
+        } catch {
+          // Ignore cleanup errors
+        }
       }
     }
-  }, [onError])
+  }, [handleError])
 
   useEffect(() => {
     // Wait for script to load and ensure window.turnstile is available
     if (!isLoaded || !containerRef.current || !window.turnstile || hasError) return
 
+    // Prevent multiple renders
+    if (isRenderedRef.current) return
+
     const siteKey = process.env.NEXT_PUBLIC_SITE_KEY_CLOUDFLARE
     if (!siteKey) {
       console.error("NEXT_PUBLIC_SITE_KEY_CLOUDFLARE is not set")
-      onError?.()
+      handleError()
       requestAnimationFrame(() => {
         setHasError(true)
       })
@@ -137,32 +190,26 @@ export function Turnstile({ onVerify, onError, onExpire, className }: TurnstileP
 
     try {
       // Render Turnstile widget with explicit rendering
-      // Since we already checked isLoaded and window.turnstile exists,
-      // we can directly call render without turnstile.ready()
       const widgetId = window.turnstile.render(container, {
         sitekey: siteKey,
-        theme: "auto", // Automatically adapts to user's theme preference
-        size: "normal", // Standard size widget
-        callback: (token: string) => {
-          onVerify(token)
-        },
+        theme: "auto",
+        size: "normal",
+        callback: handleVerify,
         "error-callback": (errorCode?: string) => {
           console.error("Turnstile error:", errorCode)
-          onError?.()
+          handleError()
           requestAnimationFrame(() => {
             setHasError(true)
           })
         },
-        "expired-callback": () => {
-          console.warn("Turnstile token expired")
-          onExpire?.()
-        },
+        "expired-callback": handleExpire,
       })
 
       widgetIdRef.current = widgetId
+      isRenderedRef.current = true
     } catch (err) {
       console.error("Error rendering Turnstile widget:", err)
-      onError?.()
+      handleError()
       requestAnimationFrame(() => {
         setHasError(true)
       })
@@ -172,12 +219,14 @@ export function Turnstile({ onVerify, onError, onExpire, className }: TurnstileP
       if (widgetIdRef.current && window.turnstile) {
         try {
           window.turnstile.remove(widgetIdRef.current)
+          widgetIdRef.current = null
+          isRenderedRef.current = false
         } catch {
           // Ignore cleanup errors
         }
       }
     }
-  }, [isLoaded, hasError, onVerify, onError, onExpire])
+  }, [isLoaded, hasError, handleVerify, handleError, handleExpire])
 
   const reset = () => {
     if (widgetIdRef.current && window.turnstile) {
