@@ -110,98 +110,119 @@ export default function ImageAnalysisPage() {
                   className="hidden"
                 />
               </div>
+            ) : messages.length === 0 ? (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 py-4">
+                {/* Image Preview */}
+                <div className="lg:col-span-1">
+                  <div className="sticky top-28 rounded-[2rem] overflow-hidden border border-border/50 bg-card/40 backdrop-blur-xl p-2 shadow-2xl">
+                    <div className="relative w-full aspect-square rounded-[1.5rem] overflow-hidden">
+                      <Image
+                        src={selectedImage}
+                        alt="Selected"
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                    <button
+                      onClick={handleReset}
+                      className="w-full mt-4 px-4 py-3 text-sm font-medium rounded-xl bg-destructive/20 hover:bg-destructive/30 text-destructive transition-all"
+                    >
+                      Upload Different Image
+                    </button>
+                  </div>
+                </div>
+
+                {/* Analysis Panel */}
+                <div className="lg:col-span-2">
+                  {!isLoading && (
+                    <div className="rounded-[2rem] bg-card/40 border-2 border-dashed border-border/50 p-8 flex items-center justify-center min-h-[300px]">
+                      <p className="text-center text-muted-foreground">
+                        Enter a prompt atau klik &quot;Analyze&quot; untuk insight gambar
+                      </p>
+                    </div>
+                  )}
+
+                  {isLoading && (
+                    <div className="rounded-[2rem] bg-card border border-border/50 backdrop-blur-md p-8 flex items-center justify-center min-h-[300px]">
+                      <div className="flex flex-col items-center gap-4">
+                        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                        <p className="text-muted-foreground">Analyzing image...</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             ) : (
               <div className="py-4">
                 {/* Analysis Panel */}
                 <div className="w-full">
-                  {messages.length === 0 ? (
-                    <div className="space-y-6">
-                      {!isLoading && (
-                        <div className="rounded-[2rem] bg-card/40 border-2 border-dashed border-border/50 p-8 flex items-center justify-center min-h-[300px]">
-                          <p className="text-center text-muted-foreground">
-                            Enter a prompt atau klik &quot;Analyze&quot; untuk insight gambar
-                          </p>
-                        </div>
-                      )}
-
-                      {isLoading && (
-                        <div className="rounded-[2rem] bg-card border border-border/50 backdrop-blur-md p-8 flex items-center justify-center min-h-[300px]">
-                          <div className="flex flex-col items-center gap-4">
-                            <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                            <p className="text-muted-foreground">Analyzing image...</p>
-                          </div>
-                        </div>
-                      )}
+                  <div className="rounded-[2rem] border border-border/50 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden min-h-[60vh] flex flex-col">
+                    <div className="flex items-center justify-between px-4 sm:px-6 pt-4 pb-2 border-b border-border/30">
+                      <h3 className="text-sm font-semibold text-foreground">Image Analysis</h3>
+                      <button
+                        onClick={handleReset}
+                        className="px-3 py-1.5 text-xs font-medium rounded-lg bg-destructive/20 hover:bg-destructive/30 text-destructive transition-all"
+                      >
+                        Upload Different Image
+                      </button>
                     </div>
-                  ) : (
-                    <div className="rounded-[2rem] border border-border/50 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden min-h-[60vh] flex flex-col">
-                      <div className="flex items-center justify-between px-4 sm:px-6 pt-4 pb-2 border-b border-border/30">
-                        <h3 className="text-sm font-semibold text-foreground">Image Analysis</h3>
-                        <button
-                          onClick={handleReset}
-                          className="px-3 py-1.5 text-xs font-medium rounded-lg bg-destructive/20 hover:bg-destructive/30 text-destructive transition-all"
-                        >
-                          Upload Different Image
-                        </button>
-                      </div>
-                      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
-                        <div className="space-y-6">
-                          {messages.map((message, index) => (
-                            <div
-                              key={index}
-                              className={`flex gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                            >
-                              {message.role === 'assistant' && (
-                                <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0 shadow-sm">
-                                  <Sparkles className="w-5 h-5 text-primary" />
-                                </div>
-                              )}
-                              <div
-                                className={`max-w-[80%] rounded-2xl px-5 py-4 shadow-sm ${message.role === 'user'
-                                  ? 'bg-card border border-border/40 text-foreground'
-                                  : 'bg-muted/30 border border-border/30 text-foreground'
-                                  }`}
-                              >
-                                {message.role === 'user' ? (
-                                  <div className="space-y-2">
-                                    {message.imageUrl && index === 0 && (
-                                      <div className="mb-2">
-                                        <Image
-                                          src={message.imageUrl}
-                                          alt="User image"
-                                          width={300}
-                                          height={300}
-                                          className="rounded-lg object-contain max-h-64 w-auto max-w-full"
-                                        />
-                                      </div>
-                                    )}
-                                    <p className="whitespace-pre-wrap wrap-break-word text-base leading-relaxed text-foreground/95">{message.content}</p>
-                                  </div>
-                                ) : (
-                                  !message.content && isLoading ? (
-                                    <div className="flex items-center gap-3">
-                                      <Loader2 className="w-5 h-5 text-primary animate-spin" />
-                                      <p className="text-sm text-muted-foreground">Analyzing...</p>
-                                    </div>
-                                  ) : message.content ? (
-                                    <div className="text-foreground prose prose-sm max-w-none">
-                                      <MarkdownRenderer content={message.content} />
-                                    </div>
-                                  ) : null
-                                )}
+                    <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
+                      <div className="space-y-6">
+                        {messages.map((message, index) => (
+                          <div
+                            key={index}
+                            className={`flex gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                          >
+                            {message.role === 'assistant' && (
+                              <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0 shadow-sm">
+                                <Sparkles className="w-5 h-5 text-primary" />
                               </div>
-                              {message.role === 'user' && (
-                                <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0 shadow-sm">
-                                  <User className="w-5 h-5 text-primary" />
+                            )}
+                            <div
+                              className={`max-w-[80%] rounded-2xl px-5 py-4 shadow-sm ${message.role === 'user'
+                                ? 'bg-card border border-border/40 text-foreground'
+                                : 'bg-muted/30 border border-border/30 text-foreground'
+                                }`}
+                            >
+                              {message.role === 'user' ? (
+                                <div className="space-y-2">
+                                  {message.imageUrl && index === 0 && (
+                                    <div className="mb-2">
+                                      <Image
+                                        src={message.imageUrl}
+                                        alt="User image"
+                                        width={300}
+                                        height={300}
+                                        className="rounded-lg object-contain max-h-64 w-auto max-w-full"
+                                      />
+                                    </div>
+                                  )}
+                                  <p className="whitespace-pre-wrap wrap-break-word text-base leading-relaxed text-foreground/95">{message.content}</p>
                                 </div>
+                              ) : (
+                                !message.content && isLoading ? (
+                                  <div className="flex items-center gap-3">
+                                    <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                                    <p className="text-sm text-muted-foreground">Analyzing...</p>
+                                  </div>
+                                ) : message.content ? (
+                                  <div className="text-foreground prose prose-sm max-w-none">
+                                    <MarkdownRenderer content={message.content} />
+                                  </div>
+                                ) : null
                               )}
                             </div>
-                          ))}
-                          <div ref={messagesEndRef} />
-                        </div>
+                            {message.role === 'user' && (
+                              <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0 shadow-sm">
+                                <User className="w-5 h-5 text-primary" />
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                        <div ref={messagesEndRef} />
                       </div>
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
             )}

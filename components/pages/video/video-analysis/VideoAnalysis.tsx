@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 
-import { User, MessageSquare, Upload, X, Video, Send, Film } from 'lucide-react';
+import { User, MessageSquare, Upload, X, Video, Send, Film, Loader2 } from 'lucide-react';
 
 import { MarkdownRenderer } from '@/components/markdown-renderer';
 
@@ -71,7 +71,7 @@ export default function VideoAnalysisPage() {
             <AsideInset>
                 <AsideMain maxWidth="6xl">
                     <div className="space-y-8">
-                        {messages.length === 0 ? (
+                        {messages.length === 0 && !video ? (
                             <div className="space-y-12 py-6">
                                 <div className="space-y-4 text-center">
                                     <h2 className="text-5xl font-black tracking-tighter leading-none bg-linear-to-br from-white via-white to-primary/50 bg-clip-text text-transparent">
@@ -184,54 +184,108 @@ export default function VideoAnalysisPage() {
                                     </div>
                                 </div>
                             </div>
+                        ) : messages.length === 0 && video ? (
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 py-4">
+                                {/* Video Preview */}
+                                <div className="lg:col-span-1">
+                                    <div className="sticky top-28 rounded-[2rem] overflow-hidden border border-border/50 bg-card/40 backdrop-blur-xl p-2 shadow-2xl">
+                                        <div className="relative w-full aspect-video rounded-[1.5rem] overflow-hidden">
+                                            <video
+                                                src={video.preview}
+                                                controls
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+                                        <button
+                                            onClick={handleRemoveVideo}
+                                            className="w-full mt-4 px-4 py-3 text-sm font-medium rounded-xl bg-destructive/20 hover:bg-destructive/30 text-destructive transition-all"
+                                        >
+                                            Upload Different Video
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Analysis Panel */}
+                                <div className="lg:col-span-2">
+                                    {!isAnalyzing && (
+                                        <div className="rounded-[2rem] bg-card/40 border-2 border-dashed border-border/50 p-8 flex items-center justify-center min-h-[300px]">
+                                            <p className="text-center text-muted-foreground">
+                                                Enter a prompt atau klik &quot;Analyze&quot; untuk insight video
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {isAnalyzing && (
+                                        <div className="rounded-[2rem] bg-card border border-border/50 backdrop-blur-md p-8 flex items-center justify-center min-h-[300px]">
+                                            <div className="flex flex-col items-center gap-4">
+                                                <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                                                <p className="text-muted-foreground">Analyzing video...</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         ) : (
-                            <div className="rounded-[2rem] border border-border/50 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden min-h-[60vh] flex flex-col">
-                                <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
-                                    <div className="space-y-6">
-                                        {messages.map((message, index) => (
-                                            <div
-                                                key={index}
-                                                className={`flex gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                            <div className="py-4">
+                                <div className="w-full">
+                                    <div className="rounded-[2rem] border border-border/50 bg-card/40 backdrop-blur-xl shadow-xl overflow-hidden min-h-[60vh] flex flex-col">
+                                        <div className="flex items-center justify-between px-4 sm:px-6 pt-4 pb-2 border-b border-border/30">
+                                            <h3 className="text-sm font-semibold text-foreground">Video Analysis</h3>
+                                            <button
+                                                onClick={handleRemoveVideo}
+                                                className="px-3 py-1.5 text-xs font-medium rounded-lg bg-destructive/20 hover:bg-destructive/30 text-destructive transition-all"
                                             >
-                                                {message.role === 'assistant' && (
-                                                    <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0 shadow-sm">
-                                                        <MessageSquare className="w-5 h-5 text-primary" />
-                                                    </div>
-                                                )}
-                                                <div
-                                                    className={`max-w-[80%] rounded-2xl px-5 py-4 shadow-sm ${message.role === 'user'
-                                                        ? 'bg-card border border-border/40 text-foreground'
-                                                        : 'bg-muted/30 border border-border/30 text-foreground'
-                                                        }`}
-                                                >
-                                                    {message.role === 'user' ? (
-                                                        <div className="space-y-2">
-                                                            {message.videoUrl && (
-                                                                <div className="mb-2">
-                                                                    <video
-                                                                        src={message.videoUrl}
-                                                                        controls
-                                                                        className="rounded-lg object-contain max-h-64 w-auto max-w-full"
-                                                                        style={{ maxWidth: '300px' }}
-                                                                    />
+                                                Upload Different Video
+                                            </button>
+                                        </div>
+                                        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
+                                            <div className="space-y-6">
+                                                {messages.map((message, index) => (
+                                                    <div
+                                                        key={index}
+                                                        className={`flex gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                                                    >
+                                                        {message.role === 'assistant' && (
+                                                            <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0 shadow-sm">
+                                                                <MessageSquare className="w-5 h-5 text-primary" />
+                                                            </div>
+                                                        )}
+                                                        <div
+                                                            className={`max-w-[80%] rounded-2xl px-5 py-4 shadow-sm ${message.role === 'user'
+                                                                ? 'bg-card border border-border/40 text-foreground'
+                                                                : 'bg-muted/30 border border-border/30 text-foreground'
+                                                                }`}
+                                                        >
+                                                            {message.role === 'user' ? (
+                                                                <div className="space-y-2">
+                                                                    {message.videoUrl && (
+                                                                        <div className="mb-2">
+                                                                            <video
+                                                                                src={message.videoUrl}
+                                                                                controls
+                                                                                className="rounded-lg object-contain max-h-64 w-auto max-w-full"
+                                                                                style={{ maxWidth: '300px' }}
+                                                                            />
+                                                                        </div>
+                                                                    )}
+                                                                    <p className="whitespace-pre-wrap wrap-break-word text-base leading-relaxed text-foreground/95">{message.content}</p>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="text-foreground prose prose-sm max-w-none">
+                                                                    <MarkdownRenderer content={message.content} />
                                                                 </div>
                                                             )}
-                                                            <p className="whitespace-pre-wrap wrap-break-word text-base leading-relaxed text-foreground/95">{message.content}</p>
                                                         </div>
-                                                    ) : (
-                                                        <div className="text-foreground prose prose-sm max-w-none">
-                                                            <MarkdownRenderer content={message.content} />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                {message.role === 'user' && (
-                                                    <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0 shadow-sm">
-                                                        <User className="w-5 h-5 text-primary" />
+                                                        {message.role === 'user' && (
+                                                            <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0 shadow-sm">
+                                                                <User className="w-5 h-5 text-primary" />
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                )}
+                                                ))}
+                                                <div ref={messagesEndRef} />
                                             </div>
-                                        ))}
-                                        <div ref={messagesEndRef} />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -260,7 +314,7 @@ export default function VideoAnalysisPage() {
                     isSpeechSupported={isSpeechSupported}
                     onVoiceToggle={toggleVoiceRecognition}
                     topSlot={
-                        video ? (
+                        video && messages.length > 0 ? (
                             <div className="flex items-center gap-3">
                                 <div className="relative inline-block">
                                     <video

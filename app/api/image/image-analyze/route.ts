@@ -102,19 +102,6 @@ export async function POST(req: NextRequest) {
       stream: true,
     };
 
-    if (hasImage) {
-      console.log("Sending image request to OpenRouter:", {
-        model: MODEL,
-        messageCount: transformedMessages.length,
-        hasImageContent: transformedMessages.some((msg) =>
-          Array.isArray(msg.content)
-        ),
-        sampleMessage: transformedMessages.find((msg) =>
-          Array.isArray(msg.content)
-        ),
-      });
-    }
-
     const response = await fetch(
       "https://openrouter.ai/api/v1/chat/completions",
       {
