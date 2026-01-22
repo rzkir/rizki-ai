@@ -66,10 +66,12 @@ export function Turnstile({ onVerify, onError, onExpire, className }: TurnstileP
 
     // Load Turnstile script with explicit rendering mode
     // Using ?render=explicit for programmatic control as per Cloudflare docs
+    // Note: Cannot use async/defer when using turnstile.ready()
     const script = document.createElement("script")
     script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
-    script.async = true
-    script.defer = true
+    // Do not set async or defer when using turnstile.ready()
+    // script.async = true
+    // script.defer = true
 
     script.onload = () => {
       setIsLoaded(true)
