@@ -19,7 +19,7 @@ interface UserAccount {
 interface AuthContextType {
   user: UserAccount | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<UserAccount>;
+  login: (email: string, password: string, turnstileToken?: string) => Promise<UserAccount>;
   loginWithGoogle: () => Promise<UserAccount>;
   loginWithGithub: () => Promise<UserAccount>;
   logout: () => Promise<void>;

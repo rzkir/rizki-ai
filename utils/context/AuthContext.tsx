@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         router.push(dashboardUrl);
     };
 
-    const login = async (email: string, password: string): Promise<UserAccount> => {
+    const login = async (email: string, password: string, turnstileToken?: string): Promise<UserAccount> => {
         try {
             if (!email || !password) {
                 throw new Error('Email dan password harus diisi');
@@ -88,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ idToken }),
+                body: JSON.stringify({ idToken, turnstileToken }),
             });
 
             setUser(userData);

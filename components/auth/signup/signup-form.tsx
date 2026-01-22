@@ -24,6 +24,8 @@ import {
 
 import { Input } from "@/components/ui/input"
 
+import { Turnstile } from "@/components/ui/turnstile"
+
 import { useAuth } from "@/utils/context/AuthContext"
 
 export function SignupForm({
@@ -38,6 +40,7 @@ export function SignupForm({
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -45,9 +48,23 @@ export function SignupForm({
 
     if (password.length < 8) return
     if (password !== confirmPassword) return
+    if (!turnstileToken) return
 
     try {
       setSubmitting(true)
+      // Verify Turnstile token before signup
+      const verifyResponse = await fetch('/api/auth/verify-turnstile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token: turnstileToken }),
+      })
+
+      if (!verifyResponse.ok) {
+        throw new Error('Turnstile verification failed')
+      }
+
       await signUp(email, password, displayName || email.split("@")[0] || "User")
     } finally {
       setSubmitting(false)
@@ -183,7 +200,14 @@ export function SignupForm({
                 </FieldDescription>
               </Field>
               <Field>
-                <Button type="submit" disabled={submitting}>
+                <Turnstile
+                  onVerify={(token) => setTurnstileToken(token)}
+                  onError={() => setTurnstileToken(null)}
+                  onExpire={() => setTurnstileToken(null)}
+                />
+              </Field>
+              <Field>
+                <Button type="submit" disabled={submitting || !turnstileToken}>
                   {submitting ? "Creating..." : "Create Account"}
                 </Button>
               </Field>

@@ -9,10 +9,47 @@ const SESSION_EXPIRATION_DAYS = 5;
 
 export async function POST(request: Request) {
   try {
-    const { idToken } = await request.json();
+    const { idToken, turnstileToken } = await request.json();
 
     if (!idToken) {
       return NextResponse.json({ error: "No token provided" }, { status: 400 });
+    }
+
+    // Verify Turnstile token if provided
+    if (turnstileToken) {
+      const secretKey = process.env.CLOUDFLARE_SECRET_KEY;
+      if (secretKey) {
+        try {
+          const turnstileResponse = await fetch(
+            "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                secret: secretKey,
+                response: turnstileToken,
+              }),
+            }
+          );
+
+          const turnstileData = await turnstileResponse.json();
+
+          if (!turnstileData.success) {
+            return NextResponse.json(
+              { error: "Turnstile verification failed" },
+              { status: 400 }
+            );
+          }
+        } catch (turnstileError) {
+          console.error("Error verifying Turnstile:", turnstileError);
+          return NextResponse.json(
+            { error: "Failed to verify Turnstile" },
+            { status: 400 }
+          );
+        }
+      }
     }
 
     // Create session cookie

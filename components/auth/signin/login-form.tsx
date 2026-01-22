@@ -20,6 +20,8 @@ import {
 
 import { Input } from "@/components/ui/input"
 
+import { Turnstile } from "@/components/ui/turnstile"
+
 import { useAuth } from "@/utils/context/AuthContext"
 
 export function LoginForm({
@@ -31,14 +33,19 @@ export function LoginForm({
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (submitting) return
 
+    if (!turnstileToken) {
+      return
+    }
+
     try {
       setSubmitting(true)
-      await login(email, password)
+      await login(email, password, turnstileToken)
     } finally {
       setSubmitting(false)
     }
@@ -124,7 +131,14 @@ export function LoginForm({
             </div>
           </Field>
           <Field>
-            <Button type="submit" disabled={submitting}>
+            <Turnstile
+              onVerify={(token) => setTurnstileToken(token)}
+              onError={() => setTurnstileToken(null)}
+              onExpire={() => setTurnstileToken(null)}
+            />
+          </Field>
+          <Field>
+            <Button type="submit" disabled={submitting || !turnstileToken}>
               {submitting ? "Logging in..." : "Login"}
             </Button>
           </Field>
