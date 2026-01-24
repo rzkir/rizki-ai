@@ -28,6 +28,12 @@ const publicPaths = [
     "/privacy-policy",
     "/refund-policy",
     "/terms-of-service",
+    "/help",
+    "/changelog",
+    "/blog",
+    "/download",
+    "terms",
+    "privacy",
 ];
 
 const adminPaths = ["/dashboard"];

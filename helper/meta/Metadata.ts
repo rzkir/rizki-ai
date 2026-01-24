@@ -456,3 +456,73 @@ export const healthMetadata: Metadata = {
     images: ["/health-og.png"],
   },
 };
+
+// Help metadata
+export const helpMetadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
+  title: "Rizki AI - Help & Support",
+  description:
+    "Get help and support for Rizki AI. Find answers to frequently asked questions, learn how to use our AI assistants, and get the most out of our platform",
+  alternates: {
+    canonical: `${SITE_URL}/help`,
+  },
+  openGraph: {
+    type: "website",
+    url: `${SITE_URL}/help`,
+    title: "Rizki AI - Help & Support",
+    description:
+      "Get help and support for Rizki AI. Find answers to frequently asked questions, learn how to use our AI assistants, and get the most out of our platform",
+    siteName: "Rizki AI",
+    images: [
+      {
+        url: "/help-og.png",
+        width: 1200,
+        height: 630,
+        alt: "Rizki AI - Help & Support",
+      },
+    ],
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Rizki AI - Help & Support",
+    description:
+      "Get help and support for Rizki AI. Find answers to frequently asked questions, learn how to use our AI assistants, and get the most out of our platform",
+    images: ["/help-og.png"],
+  },
+};
+
+// Download metadata
+export const downloadMetadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
+  title: "Rizki AI - Download",
+  description:
+    "Download Rizki AI for Windows and Android. Get the AI assistant app on your desktop or mobile device",
+  alternates: {
+    canonical: `${SITE_URL}/download`,
+  },
+  openGraph: {
+    type: "website",
+    url: `${SITE_URL}/download`,
+    title: "Rizki AI - Download",
+    description:
+      "Download Rizki AI for Windows and Android. Get the AI assistant app on your desktop or mobile device",
+    siteName: "Rizki AI",
+    images: [
+      {
+        url: "/download-og.png",
+        width: 1200,
+        height: 630,
+        alt: "Rizki AI - Download",
+      },
+    ],
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Rizki AI - Download",
+    description:
+      "Download Rizki AI for Windows and Android. Get the AI assistant app on your desktop or mobile device",
+    images: ["/download-og.png"],
+  },
+};

@@ -30,6 +30,7 @@ const links = {
         { label: "Blog", href: "/blog" },
         { label: "Changelog", href: "/changelog" },
         { label: "Bantuan", href: "/help" },
+        { label: "Download", href: "/download" },
     ],
     terms: [
         { label: "Ketentuan Layanan", href: "/terms" },

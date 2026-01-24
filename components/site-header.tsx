@@ -20,6 +20,7 @@ import {
   IconSun,
   IconMoon,
   IconDeviceDesktop,
+  IconDownload,
 } from "@tabler/icons-react"
 
 import { useAuth } from "@/utils/context/AuthContext"
@@ -172,6 +173,15 @@ export function SiteHeader() {
 
         {/* Right Side Actions */}
         <div className="ml-auto flex items-center gap-2">
+          {/* Download */}
+          <Link
+            href="/download"
+            className="flex items-center justify-center w-9 h-9 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            aria-label="Download"
+          >
+            <IconDownload className="size-5" />
+          </Link>
+
           {/* Theme Toggler */}
           <div className="relative" data-theme-menu>
             <button

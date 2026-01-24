@@ -4,7 +4,7 @@ import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
 
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 
 import { cn } from '@/lib/utils';
 
@@ -127,7 +127,7 @@ export function Sidebar({
     return (
         <>
             {/* Mobile: Floating Action Button + Sheet */}
-            <div className="lg:hidden fixed bottom-4 right-4 z-50">
+            <div className="lg:hidden fixed bottom-32 right-4 z-50">
                 <Sheet open={open} onOpenChange={onOpenChange}>
                     <SheetTrigger asChild>
                         <Button
@@ -147,6 +147,7 @@ export function Sidebar({
                         side="left"
                         className="w-[90vw] max-w-sm flex flex-col gap-0 p-0 bg-sidebar text-sidebar-foreground border-sidebar-border overflow-hidden"
                     >
+                        <SheetTitle className="sr-only">{header.title}</SheetTitle>
                         {/* Header */}
                         <div className="relative p-5 pr-12 border-b border-sidebar-border/50 bg-linear-to-br from-sidebar via-sidebar to-primary/5">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />

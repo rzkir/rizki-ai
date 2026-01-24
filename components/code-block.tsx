@@ -205,21 +205,21 @@ export function CodeBlock({
     return (
         <div
             className={cn(
-                'relative group my-4 rounded-lg overflow-hidden border border-border shadow-sm',
+                'relative group my-4 rounded-lg overflow-hidden border border-border shadow-sm w-full max-w-full',
                 className
             )}
         >
             {/* Header dengan language dan copy button */}
-            <div className="flex items-center justify-between px-4 py-2 bg-[#2d2d2d] dark:bg-[#161b22] border-b border-border/60">
+            <div className="flex items-center justify-between px-3 sm:px-4 py-2 bg-[#2d2d2d] dark:bg-[#161b22] border-b border-border/60">
                 {language && (
-                    <span className="text-xs font-mono uppercase rounded px-2 py-1 bg-[#3c3c3c] text-[#9cdcfe]">
+                    <span className="text-xs font-mono uppercase rounded px-2 py-1 bg-[#3c3c3c] text-[#9cdcfe] truncate">
                         {language}
                     </span>
                 )}
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                    className="h-7 w-7 text-muted-foreground hover:text-foreground shrink-0"
                     onClick={handleCopy}
                     title="Copy code"
                 >
@@ -232,11 +232,11 @@ export function CodeBlock({
             </div>
 
             {/* Code content */}
-            <div className="relative overflow-x-auto bg-[#1e1e1e] dark:bg-[#0d1117] text-[#d4d4d4] shadow-inner">
+            <div className="relative overflow-x-auto bg-[#1e1e1e] dark:bg-[#0d1117] text-[#d4d4d4] shadow-inner max-w-full">
                 {showLineNumbers ? (
                     <div className="flex">
                         {/* Line numbers */}
-                        <div className="shrink-0 px-4 py-3 text-right select-none border-r border-border/50 bg-[#252526] dark:bg-[#161b22]">
+                        <div className="shrink-0 px-2 sm:px-4 py-3 text-right select-none border-r border-border/50 bg-[#252526] dark:bg-[#161b22]">
                             <div className="font-mono text-xs text-[#858585] leading-6">
                                 {lines.map((_, index) => (
                                     <div key={index}>{index + 1}</div>
@@ -244,8 +244,8 @@ export function CodeBlock({
                             </div>
                         </div>
                         {/* Code */}
-                        <pre className="flex-1 overflow-x-auto py-3 px-4">
-                            <code className="font-mono text-sm leading-6 text-[#d4d4d4]">
+                        <pre className="flex-1 overflow-x-auto py-3 px-3 sm:px-4 min-w-0">
+                            <code className="font-mono text-xs sm:text-sm leading-6 text-[#d4d4d4] block">
                                 {lines.map((line, index) => (
                                     <div key={index} className="whitespace-pre">
                                         {highlightCode(line, language) || '\u00A0'}
@@ -255,8 +255,8 @@ export function CodeBlock({
                         </pre>
                     </div>
                 ) : (
-                    <pre className="overflow-x-auto py-3 px-4">
-                        <code className="font-mono text-sm leading-6 text-[#d4d4d4] block">
+                    <pre className="overflow-x-auto py-3 px-3 sm:px-4 min-w-0">
+                        <code className="font-mono text-xs sm:text-sm leading-6 text-[#d4d4d4] block">
                             {hasContent ? (
                                 lines.map((line, index) => (
                                     <div key={index} className="whitespace-pre">
