@@ -2,11 +2,13 @@ import { Metadata } from "next";
 
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL as string;
 
+const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME as string;
+
 // Default/Root metadata
 export const defaultMetadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Rizki AI - AI Assistant Hub",
+    default: `${SITE_NAME} - AI Assistant Hub`,
     template: "%s | AI Assistant Hub",
   },
   description:
@@ -17,27 +19,28 @@ export const defaultMetadata: Metadata = {
   openGraph: {
     type: "website",
     url: SITE_URL,
-    title: "Rizki AI - AI Assistant Hub",
+    title: `${SITE_NAME} - AI Assistant Hub`,
     description:
       "Advanced AI assistant platform providing specialized solutions for academia, legal, marketing, and creative tasks",
-    siteName: "Rizki AI",
+    siteName: SITE_NAME,
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Rizki AI - AI Assistant Hub",
+        alt: `${SITE_NAME} - AI Assistant Hub`,
       },
     ],
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Rizki AI - AI Assistant Hub",
+    title: `${SITE_NAME} - AI Assistant Hub`,
     description:
       "Advanced AI assistant platform providing specialized solutions for academia, legal, marketing, and creative tasks",
     images: ["/og-image.png"],
   },
+  manifest: "/manifest",
 };
 
 // Marketing metadata
@@ -52,10 +55,10 @@ export const marketingMetadata: Metadata = {
   openGraph: {
     type: "website",
     url: `${SITE_URL}/marketing`,
-    title: "Rizki AI - Marketing Assistant",
+    title: `${SITE_NAME} - Marketing Assistant`,
     description:
       "Get expert guidance on digital marketing, SEO, content strategy, and campaign optimization",
-    siteName: "Rizki AI",
+    siteName: SITE_NAME,
     images: [
       {
         url: "/marketing-og.png",
@@ -68,7 +71,7 @@ export const marketingMetadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Rizki AI - Marketing Assistant",
+    title: `${SITE_NAME} - Marketing Assistant`,
     description:
       "Get expert guidance on digital marketing, SEO, content strategy, and campaign optimization",
     images: ["/marketing-og.png"],
@@ -87,10 +90,10 @@ export const academiaMetadata: Metadata = {
   openGraph: {
     type: "website",
     url: `${SITE_URL}/academia`,
-    title: "Rizki AI - Academic Assistant",
+    title: `${SITE_NAME} - Academic Assistant`,
     description:
       "Get expert guidance on research methodology, academic writing, and scholarly topics",
-    siteName: "Rizki AI",
+    siteName: SITE_NAME,
     images: [
       {
         url: "/academia-og.png",
@@ -103,7 +106,7 @@ export const academiaMetadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Rizki AI - Academic Assistant",
+    title: `${SITE_NAME} - Academic Assistant`,
     description:
       "Get expert guidance on research methodology, academic writing, and scholarly topics",
     images: ["/academia-og.png"],
@@ -122,10 +125,10 @@ export const legalMetadata: Metadata = {
   openGraph: {
     type: "website",
     url: `${SITE_URL}/legal`,
-    title: "Rizki AI - Legal Assistant",
+    title: `${SITE_NAME} - Legal Assistant`,
     description:
       "Get expert guidance on legal matters, compliance, and regulations",
-    siteName: "Rizki AI",
+    siteName: SITE_NAME,
     images: [
       {
         url: "/legal-og.png",
@@ -138,7 +141,7 @@ export const legalMetadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Rizki AI - Legal Assistant",
+    title: `${SITE_NAME} - Legal Assistant`,
     description:
       "Get expert guidance on legal matters, compliance, and regulations",
     images: ["/legal-og.png"],
@@ -157,10 +160,10 @@ export const financeMetadata: Metadata = {
   openGraph: {
     type: "website",
     url: `${SITE_URL}/finance`,
-    title: "Rizki AI - Finance Assistant",
+    title: `${SITE_NAME} - Finance Assistant`,
     description:
       "Get expert guidance on personal finance, investments, budgeting, financial planning, and money management",
-    siteName: "Rizki AI",
+    siteName: SITE_NAME,
     images: [
       {
         url: "/finance-og.png",
@@ -173,7 +176,7 @@ export const financeMetadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Rizki AI - Finance Assistant",
+    title: `${SITE_NAME} - Finance Assistant`,
     description:
       "Get expert guidance on personal finance, investments, budgeting, financial planning, and money management",
     images: ["/finance-og.png"],
@@ -192,10 +195,10 @@ export const seoMetadata: Metadata = {
   openGraph: {
     type: "website",
     url: `${SITE_URL}/seo`,
-    title: "Rizki AI - SEO Assistant",
+    title: `${SITE_NAME} - SEO Assistant`,
     description:
       "Get expert guidance on search engine optimization, keyword research, on-page SEO, technical SEO, and SEO best practices",
-    siteName: "Rizki AI",
+    siteName: SITE_NAME,
     images: [
       {
         url: "/seo-og.png",
@@ -208,7 +211,7 @@ export const seoMetadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Rizki AI - SEO Assistant",
+    title: `${SITE_NAME} - SEO Assistant`,
     description:
       "Get expert guidance on search engine optimization, keyword research, on-page SEO, technical SEO, and SEO best practices",
     images: ["/seo-og.png"],
@@ -227,10 +230,10 @@ export const imageMetadata: Metadata = {
   openGraph: {
     type: "website",
     url: `${SITE_URL}/image`,
-    title: "Rizki AI - Image Generator",
+    title: `${SITE_NAME} - Image Generator`,
     description:
       "Transform your ideas into stunning visuals with our AI-powered image generation tool",
-    siteName: "Rizki AI",
+    siteName: SITE_NAME,
     images: [
       {
         url: "/image-og.png",
@@ -243,7 +246,7 @@ export const imageMetadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Rizki AI - Image Generator",
+    title: `${SITE_NAME} - Image Generator`,
     description:
       "Transform your ideas into stunning visuals with our AI-powered image generation tool",
     images: ["/image-og.png"],
@@ -262,10 +265,10 @@ export const videoMetadata: Metadata = {
   openGraph: {
     type: "website",
     url: `${SITE_URL}/video`,
-    title: "Rizki AI - Video Generator",
+    title: `${SITE_NAME} - Video Generator`,
     description:
       "Create compelling videos with our AI-powered video generation platform",
-    siteName: "Rizki AI",
+    siteName: SITE_NAME,
     images: [
       {
         url: "/video-og.png",
@@ -278,7 +281,7 @@ export const videoMetadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Rizki AI - Video Generator",
+    title: `${SITE_NAME} - Video Generator`,
     description:
       "Create compelling videos with our AI-powered video generation platform",
     images: ["/video-og.png"],
@@ -296,9 +299,9 @@ export const videoAnalysisMetadata: Metadata = {
   openGraph: {
     type: "website",
     url: `${SITE_URL}/video-analysis`,
-    title: "Rizki AI - Video Analysis",
+    title: `${SITE_NAME} - Video Analysis`,
     description: "Analyze videos with our AI-powered video analysis platform",
-    siteName: "Rizki AI",
+    siteName: SITE_NAME,
     images: [
       {
         url: "/video-og.png",
@@ -311,7 +314,7 @@ export const videoAnalysisMetadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Rizki AI - Video Analysis",
+    title: `${SITE_NAME} - Video Analysis`,
     description: "Analyze videos with our AI-powered video analysis platform",
     images: ["/video-analysis-og.png"],
   },
@@ -329,10 +332,10 @@ export const technologyMetadata: Metadata = {
   openGraph: {
     type: "website",
     url: `${SITE_URL}/technology`,
-    title: "Rizki AI - Technology Assistant",
+    title: `${SITE_NAME} - Technology Assistant`,
     description:
       "Get expert guidance on technology trends, innovations, AI, cloud computing, blockchain, and emerging tech",
-    siteName: "Rizki AI",
+    siteName: SITE_NAME,
     images: [
       {
         url: "/technology-og.png",
@@ -345,7 +348,7 @@ export const technologyMetadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Rizki AI - Technology Assistant",
+    title: `${SITE_NAME} - Technology Assistant`,
     description:
       "Get expert guidance on technology trends, innovations, AI, cloud computing, blockchain, and emerging tech",
     images: ["/technology-og.png"],
@@ -364,10 +367,10 @@ export const programmingMetadata: Metadata = {
   openGraph: {
     type: "website",
     url: `${SITE_URL}/programming`,
-    title: "Rizki AI - Programming Assistant",
+    title: `${SITE_NAME} - Programming Assistant`,
     description:
       "Get expert help with coding, debugging, code review, and programming best practices across multiple languages",
-    siteName: "Rizki AI",
+    siteName: SITE_NAME,
     images: [
       {
         url: "/programming-og.png",
@@ -380,7 +383,7 @@ export const programmingMetadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Rizki AI - Programming Assistant",
+    title: `${SITE_NAME} - Programming Assistant`,
     description:
       "Get expert help with coding, debugging, code review, and programming best practices across multiple languages",
     images: ["/programming-og.png"],
@@ -399,10 +402,10 @@ export const curhatMetadata: Metadata = {
   openGraph: {
     type: "website",
     url: `${SITE_URL}/curhat`,
-    title: "Rizki AI - Personal Assistant",
+    title: `${SITE_NAME} - Personal Assistant`,
     description:
       "Share your thoughts, feelings, and concerns with our empathetic AI assistant. Get support and guidance in a safe, confidential space",
-    siteName: "Rizki AI",
+    siteName: SITE_NAME,
     images: [
       {
         url: "/curhat-og.png",
@@ -415,7 +418,7 @@ export const curhatMetadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Rizki AI - Personal Assistant",
+    title: `${SITE_NAME} - Personal Assistant`,
     description:
       "Share your thoughts, feelings, and concerns with our empathetic AI assistant. Get support and guidance in a safe, confidential space",
     images: ["/curhat-og.png"],
@@ -434,10 +437,10 @@ export const healthMetadata: Metadata = {
   openGraph: {
     type: "website",
     url: `${SITE_URL}/health`,
-    title: "Rizki AI - Health Assistant",
+    title: `${SITE_NAME} - Health Assistant`,
     description:
       "Get personalized health advice, wellness tips, and guidance on fitness, nutrition, and mental health from our AI health assistant",
-    siteName: "Rizki AI",
+    siteName: SITE_NAME,
     images: [
       {
         url: "/health-og.png",
@@ -450,7 +453,7 @@ export const healthMetadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Rizki AI - Health Assistant",
+    title: `${SITE_NAME} - Health Assistant`,
     description:
       "Get personalized health advice, wellness tips, and guidance on fitness, nutrition, and mental health from our AI health assistant",
     images: ["/health-og.png"],
@@ -469,10 +472,10 @@ export const helpMetadata: Metadata = {
   openGraph: {
     type: "website",
     url: `${SITE_URL}/help`,
-    title: "Rizki AI - Help & Support",
+    title: `${SITE_NAME} - Help & Support`,
     description:
-      "Get help and support for Rizki AI. Find answers to frequently asked questions, learn how to use our AI assistants, and get the most out of our platform",
-    siteName: "Rizki AI",
+      `Get help and support for ${SITE_NAME}. Find answers to frequently asked questions, learn how to use our AI assistants, and get the most out of our platform`,
+    siteName: SITE_NAME,
     images: [
       {
         url: "/help-og.png",
@@ -485,9 +488,9 @@ export const helpMetadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Rizki AI - Help & Support",
+    title: `${SITE_NAME} - Help & Support`,
     description:
-      "Get help and support for Rizki AI. Find answers to frequently asked questions, learn how to use our AI assistants, and get the most out of our platform",
+      `Get help and support for ${SITE_NAME}. Find answers to frequently asked questions, learn how to use our AI assistants, and get the most out of our platform`,
     images: ["/help-og.png"],
   },
 };
@@ -504,10 +507,10 @@ export const downloadMetadata: Metadata = {
   openGraph: {
     type: "website",
     url: `${SITE_URL}/download`,
-    title: "Rizki AI - Download",
+    title: `${SITE_NAME} - Download`,
     description:
       "Download Rizki AI for Windows and Android. Get the AI assistant app on your desktop or mobile device",
-    siteName: "Rizki AI",
+    siteName: SITE_NAME,
     images: [
       {
         url: "/download-og.png",
@@ -520,7 +523,7 @@ export const downloadMetadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Rizki AI - Download",
+    title: `${SITE_NAME} - Download`,
     description:
       "Download Rizki AI for Windows and Android. Get the AI assistant app on your desktop or mobile device",
     images: ["/download-og.png"],
