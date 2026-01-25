@@ -54,7 +54,7 @@ export default function ImageGenerator() {
                         </div>
                     </div>
                     <p className="text-sm font-medium text-muted-foreground">Belum ada riwayat</p>
-                    <p className="text-xs text-muted-foreground/60 mt-1 max-w-[200px] mx-auto">
+                    <p className="text-xs text-muted-foreground/60 mt-1 max-w-50 mx-auto">
                         Gambar yang kamu generate akan tersimpan di sini
                     </p>
                 </div>
@@ -161,7 +161,7 @@ export default function ImageGenerator() {
                                                 key={`${res.width}x${res.height}`}
                                                 onClick={() => setResolution(res)}
                                                 disabled={isLoading}
-                                                className={`group relative rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-2 p-4 min-h-[100px] ${isSelected
+                                                className={`group relative rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-2 p-4 min-h-25 ${isSelected
                                                     ? 'border-primary bg-primary/10 shadow-md'
                                                     : 'border-border/50 bg-card/50 hover:border-primary/50 hover:bg-accent/30'
                                                     } disabled:opacity-50 disabled:cursor-not-allowed`}

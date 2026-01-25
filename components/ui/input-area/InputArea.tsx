@@ -118,7 +118,7 @@ export function InputArea({
                                         onKeyDown={onKeyDown}
                                         placeholder={placeholder}
                                         disabled={disabled || isLoading}
-                                        className={`flex-1 w-full bg-transparent text-foreground resize-none min-h-[56px] max-h-36 py-2 pl-10 pr-3 focus:outline-none placeholder:text-muted-foreground/60 disabled:opacity-50 text-base ${textareaClassName || ''}`}
+                                        className={`flex-1 w-full bg-transparent text-foreground resize-none min-h-14 max-h-36 py-2 pl-10 pr-3 focus:outline-none placeholder:text-muted-foreground/60 disabled:opacity-50 text-base ${textareaClassName || ''}`}
                                         rows={1}
                                     />
                                 </div>
@@ -136,7 +136,7 @@ export function InputArea({
                                         onKeyDown={onKeyDown}
                                         placeholder={placeholder}
                                         disabled={disabled || isLoading}
-                                        className={`flex-1 bg-transparent text-foreground resize-none min-h-[56px] max-h-36 py-2 px-3 focus:outline-none placeholder:text-muted-foreground/60 disabled:opacity-50 text-base ${textareaClassName || ''}`}
+                                        className={`flex-1 bg-transparent text-foreground resize-none min-h-14 max-h-36 py-2 px-3 focus:outline-none placeholder:text-muted-foreground/60 disabled:opacity-50 text-base ${textareaClassName || ''}`}
                                         rows={1}
                                     />
                                 </>

@@ -139,7 +139,7 @@ export default function Menu() {
                             {/* Content */}
                             <div className="flex h-[calc(100vh-52px-57px)] flex-col sm:h-[calc(100vh-52px)] sm:flex-row">
                                 {/* Left: groups */}
-                                <aside className="hidden w-[280px] shrink-0 overflow-auto border-r border-border bg-muted/20 sm:block">
+                                <aside className="hidden w-70 shrink-0 overflow-auto border-r border-border bg-muted/20 sm:block">
                                     <div className="p-3">
                                         {navData.map((group) => {
                                             const GroupIcon = group.icon

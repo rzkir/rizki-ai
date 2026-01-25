@@ -48,7 +48,7 @@ export default function Chat() {
             >
                 <div className="space-y-4">
                     <AsideSectionDivider>Riwayat</AsideSectionDivider>
-                    <div className="min-h-[200px]">
+                    <div className="min-h-50">
                         {historyItems.length === 0 ? (
                             <p className="text-xs text-muted-foreground">Belum ada riwayat percakapan.</p>
                         ) : (
@@ -122,7 +122,7 @@ export default function Chat() {
                                         className={`flex gap-2 sm:gap-3 md:gap-4 min-w-0 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                                     >
                                         {message.role === 'assistant' && (
-                                            <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full bg-primary/15 items-center justify-center shrink-0 shadow-sm hidden md:block">
+                                            <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full bg-primary/15 items-center justify-center shrink-0 shadow-sm hidden md:flex">
                                                 <MessageSquare className="w-4 h-4 sm:w-4 sm:h-4 md:w-5 md:h-5 text-primary" />
                                             </div>
                                         )}
