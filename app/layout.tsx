@@ -10,6 +10,8 @@ import Pathname from "@/helper/routing/Pathname";
 
 import { defaultMetadata } from "@/helper/meta/Metadata";
 
+import { sitelinksJsonLd, organizationJsonLd } from "@/helper/breadchumb/Script";
+
 export const metadata: Metadata = defaultMetadata;
 
 export default function RootLayout({
@@ -18,7 +20,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="id" suppressHydrationWarning>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(sitelinksJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

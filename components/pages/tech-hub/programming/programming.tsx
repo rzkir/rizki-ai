@@ -76,7 +76,7 @@ export default function Chat() {
                         {messages.length === 0 ? (
                             <div className="h-full flex flex-col items-center justify-center min-h-[70vh] px-4 sm:px-6">
                                 <div className="max-w-5xl w-full space-y-6 sm:space-y-8 flex flex-col items-center">
-                                    <div className="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center">
+                                    <div className="w-12 h-12 sm:w-16 sm:h-16 items-center justify-center">
                                         <Code className="w-12 h-12 sm:w-16 sm:h-16 text-primary opacity-80" strokeWidth={1.5} />
                                     </div>
 
@@ -87,7 +87,7 @@ export default function Chat() {
                                     </div>
 
                                     <div className="bg-transparent rounded-lg p-3 sm:p-4 max-w-2xl mx-auto flex items-start gap-2 sm:gap-3 w-full">
-                                        <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0 mt-1">
+                                        <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary/20 items-center justify-center shrink-0 mt-1">
                                             <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
                                         </div>
                                         <p className="text-foreground/90 text-xs sm:text-sm leading-relaxed">
@@ -102,7 +102,7 @@ export default function Chat() {
                                                 onClick={() => setInput(item.prompt)}
                                                 className="w-full group flex items-start gap-2 sm:gap-3 rounded-xl border border-sidebar-border/50 bg-sidebar-accent/60 hover:border-primary/40 hover:bg-primary/10 transition-all p-2.5 sm:p-3 text-left"
                                             >
-                                                <div className="p-1.5 sm:p-2 rounded-lg bg-primary/15 text-primary shrink-0">
+                                                <div className="p-1.5 sm:p-2 rounded-lg bg-primary/15 text-primary shrink-0 hidden md:block">
                                                     <item.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                                 </div>
                                                 <div className="min-w-0 flex-1">
@@ -115,21 +115,21 @@ export default function Chat() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
+                            <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 space-y-3 sm:space-y-4 md:space-y-6">
                                 {messages.map((message, index) => (
                                     <div
                                         key={index}
                                         className={`flex gap-2 sm:gap-3 md:gap-4 min-w-0 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                                     >
                                         {message.role === 'assistant' && (
-                                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                                                <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
+                                            <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full bg-primary/15 items-center justify-center shrink-0 shadow-sm hidden md:block">
+                                                <MessageSquare className="w-4 h-4 sm:w-4 sm:h-4 md:w-5 md:h-5 text-primary" />
                                             </div>
                                         )}
                                         <div
-                                            className={`max-w-[85%] sm:max-w-[80%] md:max-w-[75%] rounded-lg px-3 py-2.5 sm:px-4 sm:py-3 md:px-5 md:py-4 overflow-hidden ${message.role === 'user'
+                                            className={`max-w-[85%] sm:max-w-[80%] md:max-w-[75%] rounded-xl sm:rounded-2xl px-3 py-2.5 sm:px-4 sm:py-3 md:px-5 md:py-4 shadow-sm overflow-hidden ${message.role === 'user'
                                                 ? 'bg-card border border-border/40 text-foreground'
-                                                : 'text-foreground'
+                                                : 'bg-muted/30 border border-border/30 text-foreground'
                                                 }`}
                                         >
                                             {message.role === 'user' ? (
@@ -145,8 +145,8 @@ export default function Chat() {
                                             )}
                                         </div>
                                         {message.role === 'user' && (
-                                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                                                <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary" />
+                                            <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full bg-primary/15 items-center justify-center shrink-0 shadow-sm hidden md:flex">
+                                                <User className="w-4 h-4 sm:w-4 sm:h-4 md:w-5 md:h-5 text-primary" />
                                             </div>
                                         )}
                                     </div>

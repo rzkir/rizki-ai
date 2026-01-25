@@ -114,25 +114,25 @@ export default function Chat() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
+                            <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 space-y-3 sm:space-y-4 md:space-y-6">
                                 {messages.map((message, index) => (
                                     <div
                                         key={index}
-                                        className={`flex gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                                        className={`flex gap-2 sm:gap-3 md:gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                                     >
                                         {message.role === 'assistant' && (
-                                            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                                                <MessageSquare className="w-4 h-4 text-primary" />
+                                            <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0 shadow-sm">
+                                                <MessageSquare className="w-4 h-4 sm:w-4 sm:h-4 md:w-5 md:h-5 text-primary" />
                                             </div>
                                         )}
                                         <div
-                                            className={`max-w-[80%] rounded-lg px-5 py-4 ${message.role === 'user'
+                                            className={`max-w-[85%] sm:max-w-[80%] md:max-w-[75%] rounded-xl sm:rounded-2xl px-3 py-2.5 sm:px-4 sm:py-3 md:px-5 md:py-4 shadow-sm ${message.role === 'user'
                                                 ? 'bg-card border border-border/40 text-foreground'
-                                                : 'text-foreground'
+                                                : 'bg-muted/30 border border-border/30 text-foreground'
                                                 }`}
                                         >
                                             {message.role === 'user' ? (
-                                                <p className="whitespace-pre-wrap wrap-break-word text-base leading-relaxed text-foreground/95">{message.content}</p>
+                                                <p className="whitespace-pre-wrap wrap-break-word text-sm sm:text-base leading-relaxed text-foreground/95">{message.content}</p>
                                             ) : message.content === '' ? (
                                                 <LoadingDots />
                                             ) : (
@@ -142,8 +142,8 @@ export default function Chat() {
                                             )}
                                         </div>
                                         {message.role === 'user' && (
-                                            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                                                <User className="w-4 h-4 text-primary" />
+                                            <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0 shadow-sm">
+                                                <User className="w-4 h-4 sm:w-4 sm:h-4 md:w-5 md:h-5 text-primary" />
                                             </div>
                                         )}
                                     </div>

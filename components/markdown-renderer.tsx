@@ -85,12 +85,12 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
             const table = parseTable(tableRows);
             if (table.headers.length > 0) {
                 elements.push(
-                    <div key={`table-${elements.length}`} className="my-4">
+                    <div key={`table-${elements.length}`} className="my-3 sm:my-4 overflow-x-auto">
                         <Table>
                             <TableHeader>
                                 <TableRow>
                                     {table.headers.map((header: string, idx: number) => (
-                                        <TableHead key={idx}>
+                                        <TableHead key={idx} className="text-xs sm:text-sm">
                                             <div className="space-y-1">
                                                 {header.trim().split('<br>').map((part: string, partIdx: number, parts: string[]) => (
                                                     <React.Fragment key={partIdx}>
@@ -107,7 +107,7 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
                                 {table.rows.map((row: string[], rowIdx: number) => (
                                     <TableRow key={rowIdx}>
                                         {row.map((cell: string, cellIdx: number) => (
-                                            <TableCell key={cellIdx}>
+                                            <TableCell key={cellIdx} className="text-xs sm:text-sm">
                                                 <div className="space-y-1">
                                                     {cell.trim().split('<br>').map((part: string, partIdx: number, parts: string[]) => (
                                                         <React.Fragment key={partIdx}>
@@ -327,7 +327,7 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
     flushCodeBlock();
 
     return (
-        <div className={cn('max-w-none space-y-3', className)}>
+        <div className={cn('max-w-none space-y-2 sm:space-y-3 md:space-y-4', className)}>
             {elements}
         </div>
     );

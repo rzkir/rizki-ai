@@ -240,20 +240,20 @@ export default function VideoAnalysisPage() {
                                                 Upload Different Video
                                             </button>
                                         </div>
-                                        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
-                                            <div className="space-y-6">
+                                        <div className="flex-1 overflow-y-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6">
+                                            <div className="space-y-3 sm:space-y-4 md:space-y-6">
                                                 {messages.map((message, index) => (
                                                     <div
                                                         key={index}
-                                                        className={`flex gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                                                        className={`flex gap-2 sm:gap-3 md:gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                                                     >
                                                         {message.role === 'assistant' && (
-                                                            <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0 shadow-sm">
-                                                                <MessageSquare className="w-5 h-5 text-primary" />
+                                                            <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0 shadow-sm">
+                                                                <MessageSquare className="w-4 h-4 sm:w-4 sm:h-4 md:w-5 md:h-5 text-primary" />
                                                             </div>
                                                         )}
                                                         <div
-                                                            className={`max-w-[80%] rounded-2xl px-5 py-4 shadow-sm ${message.role === 'user'
+                                                            className={`max-w-[85%] sm:max-w-[80%] md:max-w-[75%] rounded-xl sm:rounded-2xl px-3 py-2.5 sm:px-4 sm:py-3 md:px-5 md:py-4 shadow-sm ${message.role === 'user'
                                                                 ? 'bg-card border border-border/40 text-foreground'
                                                                 : 'bg-muted/30 border border-border/30 text-foreground'
                                                                 }`}
@@ -270,7 +270,7 @@ export default function VideoAnalysisPage() {
                                                                             />
                                                                         </div>
                                                                     )}
-                                                                    <p className="whitespace-pre-wrap wrap-break-word text-base leading-relaxed text-foreground/95">{message.content}</p>
+                                                                    <p className="whitespace-pre-wrap wrap-break-word text-sm sm:text-base leading-relaxed text-foreground/95">{message.content}</p>
                                                                 </div>
                                                             ) : (
                                                                 <div className="text-foreground prose prose-sm max-w-none">
@@ -279,8 +279,8 @@ export default function VideoAnalysisPage() {
                                                             )}
                                                         </div>
                                                         {message.role === 'user' && (
-                                                            <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0 shadow-sm">
-                                                                <User className="w-5 h-5 text-primary" />
+                                                            <div className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full bg-primary/15 flex items-center justify-center shrink-0 shadow-sm">
+                                                                <User className="w-4 h-4 sm:w-4 sm:h-4 md:w-5 md:h-5 text-primary" />
                                                             </div>
                                                         )}
                                                     </div>

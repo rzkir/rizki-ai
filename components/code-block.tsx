@@ -203,72 +203,74 @@ export function CodeBlock({
     const hasContent = code.trim().length > 0;
 
     return (
-        <div
-            className={cn(
-                'relative group my-4 rounded-lg overflow-hidden border border-border shadow-sm w-full max-w-full',
-                className
-            )}
-        >
-            {/* Header dengan language dan copy button */}
-            <div className="flex items-center justify-between px-3 sm:px-4 py-2 bg-[#2d2d2d] dark:bg-[#161b22] border-b border-border/60">
-                {language && (
-                    <span className="text-xs font-mono uppercase rounded px-2 py-1 bg-[#3c3c3c] text-[#9cdcfe] truncate">
-                        {language}
-                    </span>
+        <div className="w-full max-w-full overflow-hidden">
+            <div
+                className={cn(
+                    'relative group my-3 sm:my-4 rounded-lg overflow-hidden border border-border shadow-sm w-full',
+                    className
                 )}
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-muted-foreground hover:text-foreground shrink-0"
-                    onClick={handleCopy}
-                    title="Copy code"
-                >
-                    {copied ? (
-                        <Check className="h-3.5 w-3.5 text-green-500" />
-                    ) : (
-                        <Copy className="h-3.5 w-3.5" />
+            >
+                {/* Header dengan language dan copy button */}
+                <div className="flex items-center justify-between gap-2 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-[#2d2d2d] dark:bg-[#161b22] border-b border-border/60">
+                    {language && (
+                        <span className="text-[10px] sm:text-xs font-mono uppercase rounded px-1.5 sm:px-2 py-0.5 sm:py-1 bg-[#3c3c3c] text-[#9cdcfe] truncate max-w-[40%] sm:max-w-none">
+                            {language}
+                        </span>
                     )}
-                </Button>
-            </div>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 sm:h-7 sm:w-7 text-muted-foreground hover:text-foreground shrink-0"
+                        onClick={handleCopy}
+                        title="Copy code"
+                    >
+                        {copied ? (
+                            <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-green-500" />
+                        ) : (
+                            <Copy className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                        )}
+                    </Button>
+                </div>
 
-            {/* Code content */}
-            <div className="relative overflow-x-auto bg-[#1e1e1e] dark:bg-[#0d1117] text-[#d4d4d4] shadow-inner max-w-full">
-                {showLineNumbers ? (
-                    <div className="flex">
-                        {/* Line numbers */}
-                        <div className="shrink-0 px-2 sm:px-4 py-3 text-right select-none border-r border-border/50 bg-[#252526] dark:bg-[#161b22]">
-                            <div className="font-mono text-xs text-[#858585] leading-6">
-                                {lines.map((_, index) => (
-                                    <div key={index}>{index + 1}</div>
-                                ))}
+                {/* Code content */}
+                <div className="relative overflow-x-auto bg-[#1e1e1e] dark:bg-[#0d1117] text-[#d4d4d4] shadow-inner max-w-full">
+                    {showLineNumbers ? (
+                        <div className="flex min-w-0">
+                            {/* Line numbers */}
+                            <div className="shrink-0 px-1.5 sm:px-2 md:px-4 py-2 sm:py-3 text-right select-none border-r border-border/50 bg-[#252526] dark:bg-[#161b22]">
+                                <div className="font-mono text-[10px] sm:text-xs text-[#858585] leading-5 sm:leading-6">
+                                    {lines.map((_, index) => (
+                                        <div key={index} className="min-h-[20px] sm:min-h-[24px]">{index + 1}</div>
+                                    ))}
+                                </div>
                             </div>
+                            {/* Code */}
+                            <pre className="flex-1 overflow-x-auto py-2 sm:py-3 px-2 sm:px-3 md:px-4 min-w-0">
+                                <code className="font-mono text-[10px] sm:text-xs md:text-sm leading-5 sm:leading-6 text-[#d4d4d4] block">
+                                    {lines.map((line, index) => (
+                                        <div key={index} className="whitespace-pre wrap-break-word min-h-[20px] sm:min-h-[24px]">
+                                            {highlightCode(line, language) || '\u00A0'}
+                                        </div>
+                                    ))}
+                                </code>
+                            </pre>
                         </div>
-                        {/* Code */}
-                        <pre className="flex-1 overflow-x-auto py-3 px-3 sm:px-4 min-w-0">
-                            <code className="font-mono text-xs sm:text-sm leading-6 text-[#d4d4d4] block">
-                                {lines.map((line, index) => (
-                                    <div key={index} className="whitespace-pre">
-                                        {highlightCode(line, language) || '\u00A0'}
-                                    </div>
-                                ))}
+                    ) : (
+                        <pre className="overflow-x-auto py-2 sm:py-3 px-2 sm:px-3 md:px-4 min-w-0 [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded [&::-webkit-scrollbar-thumb]:bg-[#3c3c3c] [&::-webkit-scrollbar-track]:bg-[#252526]">
+                            <code className="font-mono text-[10px] sm:text-xs md:text-sm leading-5 sm:leading-6 text-[#d4d4d4] block whitespace-pre overflow-wrap-anywhere break-all">
+                                {hasContent ? (
+                                    lines.map((line, index) => (
+                                        <div key={index} className="min-h-[20px] sm:min-h-[24px]">
+                                            {highlightCode(line, language) || '\u00A0'}
+                                        </div>
+                                    ))
+                                ) : (
+                                    <span className="text-muted-foreground">No code</span>
+                                )}
                             </code>
                         </pre>
-                    </div>
-                ) : (
-                    <pre className="overflow-x-auto py-3 px-3 sm:px-4 min-w-0">
-                        <code className="font-mono text-xs sm:text-sm leading-6 text-[#d4d4d4] block">
-                            {hasContent ? (
-                                lines.map((line, index) => (
-                                    <div key={index} className="whitespace-pre">
-                                        {highlightCode(line, language) || '\u00A0'}
-                                    </div>
-                                ))
-                            ) : (
-                                <span className="text-muted-foreground">No code</span>
-                            )}
-                        </code>
-                    </pre>
-                )}
+                    )}
+                </div>
             </div>
         </div>
     );
