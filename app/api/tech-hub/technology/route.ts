@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const MODEL = process.env.NEXT_PUBLIC_MODEL_MISTRAL;
+const MODEL = process.env.NEXT_PUBLIC_MODEL_DEEPSEEK;
 
-const OPENROUTER_API_KEY = process.env.NEXT_PUBLIC_KEY_MISTRAL;
+const OPENROUTER_API_KEY = process.env.NEXT_PUBLIC_KEY_DEEPSEEK;
 
 export async function POST(req: NextRequest) {
   try {

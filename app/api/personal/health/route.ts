@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const MODEL = process.env.NEXT_PUBLIC_MODEL_XIOMI;
+const MODEL = process.env.NEXT_PUBLIC_MODEL_DEEPSEEK;
 
-const OPENROUTER_API_KEY = process.env.NEXT_PUBLIC_API_KEY_XIOMI;
+const OPENROUTER_API_KEY = process.env.NEXT_PUBLIC_KEY_DEEPSEEK;
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,13 +23,13 @@ export async function POST(req: NextRequest) {
     const enhancedMessages = hasSystemMessage
       ? messages
       : [
-          {
-            role: "system",
-            content:
-              "You are a knowledgeable and empathetic health assistant. Provide helpful guidance on health, wellness, fitness, nutrition, and mental health topics. Always remind users to consult with healthcare professionals for serious medical concerns. Be supportive, informative, and encourage healthy lifestyle choices.",
-          },
-          ...messages,
-        ];
+        {
+          role: "system",
+          content:
+            "You are a knowledgeable and empathetic health assistant. Provide helpful guidance on health, wellness, fitness, nutrition, and mental health topics. Always remind users to consult with healthcare professionals for serious medical concerns. Be supportive, informative, and encourage healthy lifestyle choices.",
+        },
+        ...messages,
+      ];
 
     const response = await fetch(
       "https://openrouter.ai/api/v1/chat/completions",

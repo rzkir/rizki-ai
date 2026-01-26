@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const MODEL = process.env.NEXT_PUBLIC_MODEL_ALLEN_AI;
+const MODEL = process.env.NEXT_PUBLIC_MODEL_ALLENAI;
 
-const OPENROUTER_API_KEY = process.env.NEXT_PUBLIC_API_KEY_ALLEN_AI;
+const OPENROUTER_API_KEY = process.env.NEXT_PUBLIC_KEY_ALLENAI;
 
 interface InputMessage {
   role: string;
