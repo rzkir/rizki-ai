@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const MODEL = process.env.NEXT_PUBLIC_MODEL_XIOMI;
+const MODEL = process.env.NEXT_PUBLIC_MODEL_MISTRAL;
 
-const OPENROUTER_API_KEY = process.env.NEXT_PUBLIC_API_KEY_XIOMI;
+const OPENROUTER_API_KEY = process.env.NEXT_PUBLIC_KEY_MISTRAL;
 
 export async function POST(req: NextRequest) {
   try {
